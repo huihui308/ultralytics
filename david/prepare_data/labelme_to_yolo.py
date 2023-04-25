@@ -87,14 +87,14 @@ def MakeOuptDir(output_dir: str) -> None:
     if os.path.exists(testing_dir):
         shutil.rmtree(testing_dir)
     os.makedirs( testing_dir )
-    os.makedirs( os.path.join(testing_dir, "image_2") )
-    os.makedirs( os.path.join(testing_dir, "label_2") )
+    os.makedirs( os.path.join(testing_dir, "images") )
+    os.makedirs( os.path.join(testing_dir, "labels") )
     training_dir = os.path.join(output_dir, "training")
     if os.path.exists(training_dir):
         shutil.rmtree(training_dir)
     os.makedirs( training_dir )
-    os.makedirs( os.path.join(training_dir, "image_2") )
-    os.makedirs( os.path.join(training_dir, "label_2") )
+    os.makedirs( os.path.join(training_dir, "images") )
+    os.makedirs( os.path.join(training_dir, "labels") )
     return
 
 
@@ -107,12 +107,12 @@ def GenerateKITTIDataset(img_file:str, label_dict_list, output_dir:str, deal_cnt
     save_label_dir = None
     if ( ((deal_cnt % 10) == 8) or ((deal_cnt % 10) == 9) ):
         save_dir = os.path.join(output_dir, "testing")
-        save_image_dir = os.path.join(save_dir, "image_2")
-        save_label_dir = os.path.join(save_dir, "label_2")
+        save_image_dir = os.path.join(save_dir, "images")
+        save_label_dir = os.path.join(save_dir, "labels")
     else:
         save_dir = os.path.join(output_dir, "training")
-        save_image_dir = os.path.join(save_dir, "image_2")
-        save_label_dir = os.path.join(save_dir, "label_2")
+        save_image_dir = os.path.join(save_dir, "images")
+        save_label_dir = os.path.join(save_dir, "labels")
 
     dir_name, full_file_name = os.path.split(img_file)
     sub_dir_name = dir_name.split('/')[-1]
@@ -159,32 +159,33 @@ def GenerateYoloDataset(img_file:str, label_dict_list, output_dir:str, deal_cnt:
     save_label_dir = None
     if ( ((deal_cnt % 10) == 8) or ((deal_cnt % 10) == 9) ):
         save_dir = os.path.join(output_dir, "testing")
-        save_image_dir = os.path.join(save_dir, "image_2")
-        save_label_dir = os.path.join(save_dir, "label_2")
+        save_image_dir = os.path.join(save_dir, "images")
+        save_label_dir = os.path.join(save_dir, "labels")
     else:
         save_dir = os.path.join(output_dir, "training")
-        save_image_dir = os.path.join(save_dir, "image_2")
-        save_label_dir = os.path.join(save_dir, "label_2")
-
+        save_image_dir = os.path.join(save_dir, "images")
+        save_label_dir = os.path.join(save_dir, "labels")
     dir_name, full_file_name = os.path.split(img_file)
     sub_dir_name = dir_name.split('/')[-1]
     save_file_name = sub_dir_name + "_" + str(random.randint(10000000, 99999999)).zfill(8)
     #print( save_file_name )
     # resize labels
-    w, h = output_size
+    #w, h = output_size
     img = cv2.imread(img_file)
     (height, width, _) = img.shape
-    ratio_w = float( float(w)/float(width) )
-    ratio_h = float( float(h)/float(height) )
+    #ratio_w = float( float(w)/float(width) )
+    #ratio_h = float( float(h)/float(height) )
     # resize images
     #image = Image.open(img_file)
     #image.save(os.path.join(save_image_dir, save_file_name + ".jpg"))
     #print(img_file)
     shutil.copyfile(img_file, os.path.join(save_image_dir, save_file_name + ".jpg"))
+    classNumDict = {'person':'0', 'bicycle':'1', 'motor':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'red':'8', 'green':'9', 'yellow':'10'}
     with open(os.path.join(save_label_dir, save_file_name + ".txt"), "w") as f:
         for obj_dict in label_dict_list:
             for label_str, point_list in obj_dict.items():
                 #print(label_str)
+                #print(classNumDict[label_str])
                 if len(point_list) == 0:
                     continue
                 for one_point_list in point_list:
@@ -197,7 +198,7 @@ def GenerateYoloDataset(img_file:str, label_dict_list, output_dir:str, deal_cnt:
                     y1 = float(one_point_list[0][1]) / height
                     x2 = float(one_point_list[1][0]) / width
                     y2 = float(one_point_list[1][1]) / height
-                    f.write("{} {:.2f} {:.2f} {:.2f} {:.2f}\n".format(label_str, x1, y1, x2, y2))
+                    f.write("{} {:.2f} {:.2f} {:.2f} {:.2f}\n".format(classNumDict[label_str], x1, y1, x2, y2))
     return
 
 
