@@ -83,13 +83,13 @@ def MakeOuptDir(output_dir:str)->None:
     #    shutil.rmtree(output_dir)
     if not os.path.exists(output_dir):
         os.makedirs( output_dir )
-    for lopDir in ("images", "labels"):
+    for lopDir in ("train", "val"):
         firstDir = os.path.join(output_dir, lopDir)
         if os.path.exists(firstDir):
             shutil.rmtree(firstDir)
         os.makedirs(firstDir)
-        os.makedirs( os.path.join(firstDir, "train") )
-        os.makedirs( os.path.join(firstDir, "val") )
+        os.makedirs( os.path.join(firstDir, "images") )
+        os.makedirs( os.path.join(firstDir, "labels") )
     return
 
 
@@ -169,11 +169,11 @@ def GenerateYoloDataset(img_file:str, label_dict_list, output_dir:str, deal_cnt:
     save_image_dir = None
     save_label_dir = None
     if ((deal_cnt % 10) >= 8):
-        save_image_dir = os.path.join(output_dir, "images/val")
-        save_label_dir = os.path.join(output_dir, "labels/val")
+        save_image_dir = os.path.join(output_dir, "val/images")
+        save_label_dir = os.path.join(output_dir, "val/labels")
     else:
-        save_image_dir = os.path.join(output_dir, "images/train")
-        save_label_dir = os.path.join(output_dir, "labels/train")
+        save_image_dir = os.path.join(output_dir, "train/images")
+        save_label_dir = os.path.join(output_dir, "train/labels")
     dir_name, full_file_name = os.path.split(img_file)
     sub_dir_name = dir_name.split('/')[-1]
     save_file_name = sub_dir_name + "_" + str(random.randint(10000000, 99999999)).zfill(8)
