@@ -1,15 +1,16 @@
 
 
-
-# labelme_to_yolov8.py
+# Prepare datasets
+## labelme_to_yolov8.py
 input_dir: Dataset which generate by labelme, it must contains a label file and a jpg file.
 ```
-python3 labelme_to_yolov8.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/cuiwei --output_dir=./output
+$ cd david/datasets/
+$ python3 labelme_to_yolov8.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/cuiwei --output_dir=./output
 ```
 
-
-# Create test data
+## Create test data
 ```
+$ cd david/datasets/
 $ python3 generate_test_txt.py --input_dir=/home/david/dataset/detect/CBD/n2s_20220414_1800 --output_dir=./output
 ```
 
