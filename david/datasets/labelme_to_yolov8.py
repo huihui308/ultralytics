@@ -260,28 +260,17 @@ def DealOneImageLabelFiles(img_file:str, label_file:str, output_dir:str, deal_cn
             elif shape_obj['label'] == 'Y':
                 Y_list.append( shape_obj['points'] )
         label_dict_list = []
-        person_dict = { 'person': person_list }
-        label_dict_list.append( person_dict )
-        bicycle_dict = { 'bicycle': bicycle_list }
-        label_dict_list.append( bicycle_dict )
-        motor_dict = { 'motor': motor_list }
-        label_dict_list.append( motor_dict )
-        tricycle_dict = { 'tricycle': tricycle_list }
-        label_dict_list.append( tricycle_dict )
-        car_dict = { 'car': car_list }
-        label_dict_list.append( car_dict )
-        bus_dict = { 'bus': car_list }
-        label_dict_list.append( bus_dict )
-        truck_dict = { 'truck': car_list }
-        label_dict_list.append( truck_dict )
-        plate_dict = { 'plate': plate_list }
-        label_dict_list.append( plate_dict )
-        R_dict = {'R': R_list }
-        label_dict_list.append( R_dict )
-        G_dict = {'G': G_list }
-        label_dict_list.append( G_dict )
-        Y_dict = {'Y': Y_list }
-        label_dict_list.append( Y_dict )
+        label_dict_list.append( { 'person': person_list } )
+        label_dict_list.append( {'bicycle': bicycle_list} )
+        label_dict_list.append( {'motor': motor_list} )
+        label_dict_list.append( {'tricycle': tricycle_list} )
+        label_dict_list.append( {'car': car_list} )
+        label_dict_list.append( {'bus': bus_list} )
+        label_dict_list.append( {'truck': truck_list} )
+        label_dict_list.append( {'plate': plate_list} )
+        label_dict_list.append( {'R': R_list} )
+        label_dict_list.append( {'G': G_list} )
+        label_dict_list.append( {'Y': Y_list} )
         #print( label_dict_list )
         GenerateYoloDataset(img_file, label_dict_list, output_dir, deal_cnt, output_size)
         #GenerateKITTIDataset(img_file, label_dict_list, output_dir, deal_cnt, output_size)
@@ -338,15 +327,15 @@ def main_func(args = None):
     args = ParseArgs(args)
     output_size = (args.target_width, args.target_height)
     MakeOuptDir(args.output_dir)
-    deal_thread_list = []
+    dealThreadList = []
     for root, dirs, files in os.walk(args.input_dir):
         for dir in dirs:
             #DealDirFiles(os.path.join(root, dir), args.output_dir, output_size)
             deal_thread = DealDirFilesThread(os.path.join(root, dir), args.output_dir, output_size)
-            deal_thread_list.append(deal_thread)
-    for one_thread in deal_thread_list:
+            dealThreadList.append(deal_thread)
+    for one_thread in dealThreadList:
         one_thread.start()
-    for one_thread in deal_thread_list:
+    for one_thread in dealThreadList:
         one_thread.join()
     sys.stdout.write('\r>> {}: Generate yolov8 dataset success\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     sys.stdout.flush()

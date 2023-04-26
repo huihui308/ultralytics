@@ -24,6 +24,6 @@ input_dir: Dataset which generate by labelme, it must contains a label file and 
 
 
 
-
+# labelme_to_yolov8.py
 python3 labelme_to_yolov8.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/cuiwei --output_dir=./output
 
