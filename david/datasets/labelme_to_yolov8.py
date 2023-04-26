@@ -34,9 +34,23 @@ from __future__ import print_function
 import cv2
 import json
 import threading
+from tqdm import tqdm
 from PIL import Image
 from typing import List
 import os, sys, math, shutil, random, datetime, signal, argparse
+
+
+TQDM_BAR_FORMAT = '{l_bar}{bar:40}| {n_fmt}/{total_fmt} {elapsed}'
+
+
+def prRed(skk): print("\033[91m {}\033[00m" .format(skk))
+def prGreen(skk): print("\033[92m {}\033[00m" .format(skk)) 
+def prYellow(skk): print("\033[93m {}\033[00m" .format(skk))
+def prLightPurple(skk): print("\033[94m {}\033[00m" .format(skk))
+def prPurple(skk): print("\033[95m {}\033[00m" .format(skk))
+def prCyan(skk): print("\033[96m {}\033[00m" .format(skk))
+def prLightGray(skk): print("\033[97m {}\033[00m" .format(skk)) 
+def prBlack(skk): print("\033[98m {}\033[00m" .format(skk))
 
 
 def TermSigHandler(signum, frame) -> None:
@@ -82,14 +96,16 @@ def MakeOuptDir(output_dir:str)->None:
     #if os.path.exists(output_dir):
     #    shutil.rmtree(output_dir)
     if not os.path.exists(output_dir):
-        os.makedirs( output_dir )
-    for lopDir in ("train", "val"):
-        firstDir = os.path.join(output_dir, lopDir)
-        if os.path.exists(firstDir):
-            shutil.rmtree(firstDir)
-        os.makedirs(firstDir)
-        os.makedirs( os.path.join(firstDir, "images") )
-        os.makedirs( os.path.join(firstDir, "labels") )
+        os.makedirs(output_dir)
+    for lopDir0 in ("train", "val"):
+        firstDir = os.path.join(output_dir, lopDir0)
+        if not os.path.exists(firstDir):
+            #shutil.rmtree(firstDir)
+            os.makedirs(firstDir)
+        for lopDir1 in ("images", "labels"):
+            secondDir = os.path.join(firstDir, lopDir1)
+            if not os.path.exists(secondDir):
+                os.makedirs(secondDir)
     return
 
 
@@ -162,16 +178,19 @@ def GenerateKITTIDataset(img_file:str, label_dict_list, output_dir:str, deal_cnt
     return
 
 
-def GenerateYoloDataset(img_file:str, label_dict_list, output_dir:str, deal_cnt:int, output_size:List[int])->None:
+def GenerateYoloDataset(train_fp, val_fp, img_file:str, label_dict_list, output_dir:str, deal_cnt:int, output_size:List[int])->None:
     """ Create Yolo dataset. """
-    sys.stdout.write('\r>> {}: Deal file {}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), img_file))
-    sys.stdout.flush()
+    #sys.stdout.write('\r>> {}: Deal file {}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), img_file))
+    #sys.stdout.flush()
     save_image_dir = None
     save_label_dir = None
+    save_fp = None
     if ((deal_cnt % 10) >= 8):
+        save_fp = val_fp
         save_image_dir = os.path.join(output_dir, "val/images")
         save_label_dir = os.path.join(output_dir, "val/labels")
     else:
+        save_fp = train_fp
         save_image_dir = os.path.join(output_dir, "train/images")
         save_label_dir = os.path.join(output_dir, "train/labels")
     dir_name, full_file_name = os.path.split(img_file)
@@ -185,10 +204,13 @@ def GenerateYoloDataset(img_file:str, label_dict_list, output_dir:str, deal_cnt:
     #ratio_w = float( float(w)/float(width) )
     #ratio_h = float( float(h)/float(height) )
     # resize images
+    resave_file = os.path.join(save_image_dir, save_file_name + ".jpg")
     #image = Image.open(img_file)
     #image.save(os.path.join(save_image_dir, save_file_name + ".jpg"))
-    #print(img_file)
-    shutil.copyfile(img_file, os.path.join(save_image_dir, save_file_name + ".jpg"))
+    #print(type(img_file))
+    shutil.copyfile(img_file, resave_file)
+    save_fp.write(resave_file + '\n')
+    save_fp.flush()
     classNumDict = {'person':'0', 'bicycle':'1', 'motor':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}
     with open(os.path.join(save_label_dir, save_file_name + ".txt"), "w") as f:
         for obj_dict in label_dict_list:
@@ -217,7 +239,7 @@ def GenerateYoloDataset(img_file:str, label_dict_list, output_dir:str, deal_cnt:
     return
 
 
-def DealOneImageLabelFiles(img_file:str, label_file:str, output_dir:str, deal_cnt:int, output_size:List[int])->None:
+def DealOneImageLabelFiles(train_fp, val_fp, img_file:str, label_file:str, output_dir:str, deal_cnt:int, output_size:List[int])->None:
     with open(label_file, 'r') as load_f:
         load_dict = json.load(load_f)
         shapes_objs = load_dict['shapes']
@@ -272,7 +294,7 @@ def DealOneImageLabelFiles(img_file:str, label_file:str, output_dir:str, deal_cn
         label_dict_list.append( {'G': G_list} )
         label_dict_list.append( {'Y': Y_list} )
         #print( label_dict_list )
-        GenerateYoloDataset(img_file, label_dict_list, output_dir, deal_cnt, output_size)
+        GenerateYoloDataset(train_fp, val_fp, img_file, label_dict_list, output_dir, deal_cnt, output_size)
         #GenerateKITTIDataset(img_file, label_dict_list, output_dir, deal_cnt, output_size)
     return
 
@@ -321,12 +343,55 @@ class DealDirFilesThread(threading.Thread):
         return
 
 
+
+def DealDirFiles(deal_dir:str, output_dir:str, output_size:List[int])->None:
+    img_list = []
+    label_list = []
+    for root, dirs, files in os.walk(deal_dir):
+        #print(len(files))
+        for file in sorted(files):
+            #print(os.path.splitext(file)[-1])
+            if os.path.splitext(file)[-1] == '.json':
+                label_list.append( os.path.join(root, file) )
+            else:
+                img_list.append( os.path.join(root, file) )
+    if len(label_list) != len(img_list):
+        sys.stdout.write('\r>> {}: File len {}:{} err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), len(label_list), len(img_list)))
+        sys.stdout.flush()
+        os._exit(2)
+    #print(img_list)
+    img_label_list = []
+    for i in range( len(img_list) ):
+        img_label = []
+        img_label.append(img_list[i])
+        img_label.append(label_list[i])
+        img_label_list.append(img_label[:])
+    random.shuffle(img_label_list)
+    #print(img_label_list)
+    train_fp = open(output_dir + "/train.txt", "a+")
+    val_fp = open(output_dir + "/val.txt", "a+")
+    pbar = enumerate(img_label_list)
+    pbar = tqdm(pbar, total=len(img_label_list), desc="Processing {0:>15}".format(deal_dir.split('/')[-1]), colour='blue', bar_format=TQDM_BAR_FORMAT)
+    for (i, img_label) in pbar:
+        img_file = img_label[0]
+        label_file = img_label[1]
+        if os.path.splitext(img_file)[0] != os.path.splitext(label_file)[0]:
+            sys.stdout.write('\r>> {}: Image file {} and label file {} not fit err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), img_file, label_file))
+            sys.stdout.flush()
+            os._exit(2)
+        DealOneImageLabelFiles(train_fp, val_fp, img_file, label_file, output_dir, i, output_size)
+    return
+
+
 def main_func(args = None):
     """ Main function for data preparation. """
     signal.signal(signal.SIGINT, TermSigHandler)
     args = ParseArgs(args)
     output_size = (args.target_width, args.target_height)
+    args.output_dir = os.path.abspath(args.output_dir)
+    prYellow('output_dir: {}'.format(args.output_dir))
     MakeOuptDir(args.output_dir)
+    """
     dealThreadList = []
     for root, dirs, files in os.walk(args.input_dir):
         for dir in dirs:
@@ -337,7 +402,11 @@ def main_func(args = None):
         one_thread.start()
     for one_thread in dealThreadList:
         one_thread.join()
-    sys.stdout.write('\r>> {}: Generate yolov8 dataset success\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    """
+    for root, dirs, files in os.walk(args.input_dir):
+        for dir in dirs:
+            DealDirFiles(os.path.join(root, dir), args.output_dir, output_size)
+    sys.stdout.write('\r>> {}: Generate yolov dataset success, save dir:{}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), args.output_dir))
     sys.stdout.flush()
     return
 
