@@ -239,7 +239,7 @@ def GenerateYoloDataset(train_fp, val_fp, img_file:str, label_dict_list, output_
     return
 
 
-def DealOneImageLabelFiles(train_fp, val_fp, img_file:str, label_file:str, output_dir:str, deal_cnt:int, output_size:List[int])->None:
+def DealOneImageLabelFiles(train_fp, val_fp, img_file:str, label_file:str, output_dir:str, deal_cnt:int, output_size:List[int], obj_cnt_list)->None:
     with open(label_file, 'r') as load_f:
         load_dict = json.load(load_f)
         shapes_objs = load_dict['shapes']
@@ -256,30 +256,41 @@ def DealOneImageLabelFiles(train_fp, val_fp, img_file:str, label_file:str, outpu
         Y_list = []
         for shape_obj in shapes_objs:
             if shape_obj['label'] == 'person':
+                obj_cnt_list[0] += 1
                 if len(shape_obj['points']) != 2:
                     sys.stdout.write('\r>> {}: Label file point format err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
                     sys.stdout.flush()
                     os._exit(2)
                 person_list.append( shape_obj['points'] )
             elif shape_obj['label'] == 'bicycle':
+                obj_cnt_list[1] += 1
                 bicycle_list.append( shape_obj['points'] )
             elif shape_obj['label'] == 'motor':
+                obj_cnt_list[2] += 1
                 motor_list.append( shape_obj['points'] )
             elif shape_obj['label'] == 'tricycle':
+                obj_cnt_list[3] += 1
                 tricycle_list.append( shape_obj['points'] )
             elif shape_obj['label'] == 'car':
+                obj_cnt_list[4] += 1
                 car_list.append( shape_obj['points'] )
             elif shape_obj['label'] == 'bus':
+                obj_cnt_list[5] += 1
                 bus_list.append( shape_obj['points'] )
             elif shape_obj['label'] == 'truck':
+                obj_cnt_list[6] += 1
                 truck_list.append( shape_obj['points'] )
             elif shape_obj['label'] == 'plate':
+                obj_cnt_list[7] += 1
                 plate_list.append( shape_obj['points'] )
             elif shape_obj['label'] == 'R':
+                obj_cnt_list[8] += 1
                 R_list.append( shape_obj['points'] )
             elif shape_obj['label'] == 'G':
+                obj_cnt_list[9] += 1
                 G_list.append( shape_obj['points'] )
             elif shape_obj['label'] == 'Y':
+                obj_cnt_list[10] += 1
                 Y_list.append( shape_obj['points'] )
         label_dict_list = []
         label_dict_list.append( { 'person': person_list } )
@@ -344,7 +355,7 @@ class DealDirFilesThread(threading.Thread):
 
 
 
-def DealDirFiles(deal_dir:str, output_dir:str, output_size:List[int])->None:
+def DealDirFiles(deal_dir:str, output_dir:str, output_size:List[int], obj_cnt_list)->None:
     img_list = []
     label_list = []
     for root, dirs, files in os.walk(deal_dir):
@@ -379,7 +390,7 @@ def DealDirFiles(deal_dir:str, output_dir:str, output_size:List[int])->None:
             sys.stdout.write('\r>> {}: Image file {} and label file {} not fit err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), img_file, label_file))
             sys.stdout.flush()
             os._exit(2)
-        DealOneImageLabelFiles(train_fp, val_fp, img_file, label_file, output_dir, i, output_size)
+        DealOneImageLabelFiles(train_fp, val_fp, img_file, label_file, output_dir, i, output_size, obj_cnt_list)
     return
 
 
@@ -403,9 +414,12 @@ def main_func(args = None):
     for one_thread in dealThreadList:
         one_thread.join()
     """
+    obj_cnt_list = [0 for _ in range(11)]
     for root, dirs, files in os.walk(args.input_dir):
         for dir in dirs:
-            DealDirFiles(os.path.join(root, dir), args.output_dir, output_size)
+            DealDirFiles(os.path.join(root, dir), args.output_dir, output_size, obj_cnt_list)
+    print("\n%10s %10s %10s %10s %10s %10s %10s %10s %10s %10s %10s %10s" %('person', 'bicycle', 'motor', 'tricycle', 'car', 'bus', 'truck', 'plate', 'R', 'G', 'Y', 'total'))
+    print("%10d %10d %10d %10d %10d %10d %10d %10d %10d %10d %10d %10d\n" %(obj_cnt_list[0], obj_cnt_list[1], obj_cnt_list[2], obj_cnt_list[3], obj_cnt_list[4], obj_cnt_list[5], obj_cnt_list[6], obj_cnt_list[7], obj_cnt_list[8], obj_cnt_list[9], obj_cnt_list[10], sum(obj_cnt_list)))
     sys.stdout.write('\r>> {}: Generate yolov dataset success, save dir:{}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), args.output_dir))
     sys.stdout.flush()
     return
