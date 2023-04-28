@@ -211,7 +211,7 @@ def GenerateYoloDataset(train_fp, val_fp, img_file:str, label_dict_list, output_
     shutil.copyfile(img_file, resave_file)
     save_fp.write(resave_file + '\n')
     save_fp.flush()
-    classNumDict = {'person':'0', 'bicycle':'1', 'motor':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}
+    classNumDict = {'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}
     with open(os.path.join(save_label_dir, save_file_name + ".txt"), "w") as f:
         for obj_dict in label_dict_list:
             for label_str, point_list in obj_dict.items():
@@ -265,7 +265,7 @@ def DealOneImageLabelFiles(train_fp, val_fp, img_file:str, label_file:str, outpu
             elif shape_obj['label'] == 'bicycle':
                 obj_cnt_list[1] += 1
                 bicycle_list.append( shape_obj['points'] )
-            elif shape_obj['label'] == 'motor':
+            elif shape_obj['label'] == 'motorbike':
                 obj_cnt_list[2] += 1
                 motor_list.append( shape_obj['points'] )
             elif shape_obj['label'] == 'tricycle':
@@ -295,7 +295,7 @@ def DealOneImageLabelFiles(train_fp, val_fp, img_file:str, label_file:str, outpu
         label_dict_list = []
         label_dict_list.append( { 'person': person_list } )
         label_dict_list.append( {'bicycle': bicycle_list} )
-        label_dict_list.append( {'motor': motor_list} )
+        label_dict_list.append( {'motorbike': motor_list} )
         label_dict_list.append( {'tricycle': tricycle_list} )
         label_dict_list.append( {'car': car_list} )
         label_dict_list.append( {'bus': bus_list} )
@@ -418,7 +418,7 @@ def main_func(args = None):
     for root, dirs, files in os.walk(args.input_dir):
         for dir in dirs:
             DealDirFiles(os.path.join(root, dir), args.output_dir, output_size, obj_cnt_list)
-    print("\n%10s %10s %10s %10s %10s %10s %10s %10s %10s %10s %10s %10s" %('person', 'bicycle', 'motor', 'tricycle', 'car', 'bus', 'truck', 'plate', 'R', 'G', 'Y', 'total'))
+    print("\n%10s %10s %10s %10s %10s %10s %10s %10s %10s %10s %10s %10s" %('person', 'bicycle', 'motorbike', 'tricycle', 'car', 'bus', 'truck', 'plate', 'R', 'G', 'Y', 'total'))
     print("%10d %10d %10d %10d %10d %10d %10d %10d %10d %10d %10d %10d\n" %(obj_cnt_list[0], obj_cnt_list[1], obj_cnt_list[2], obj_cnt_list[3], obj_cnt_list[4], obj_cnt_list[5], obj_cnt_list[6], obj_cnt_list[7], obj_cnt_list[8], obj_cnt_list[9], obj_cnt_list[10], sum(obj_cnt_list)))
     sys.stdout.write('\r>> {}: Generate yolov dataset success, save dir:{}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), args.output_dir))
     sys.stdout.flush()

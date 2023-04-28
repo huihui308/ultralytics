@@ -1,11 +1,13 @@
 
 
 # Prepare datasets
-## labelme_to_yolov8.py
+## labelme_to_yolov.py
 input_dir: Dataset which generate by labelme, it must contains a label file and a jpg file.
 ```
 $ cd david/datasets/
 $ python3 labelme_to_yolov.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/cuiwei --output_dir=./output
+
+$ python3 labelme_to_yolov.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/ecopark/haitian-20230428 --output_dir=./output
 ```
 
 ## Create test data
@@ -18,7 +20,9 @@ $ python3 generate_test_txt.py --input_dir=/home/david/dataset/detect/CBD/n2s_20
 # Train
 copy yolov8n.pt to project directory.
 ```
-$ yolo task=detect mode=train model=david/model/yolov8n.pt data=david/config/primaryDet.yaml epochs=300 batch=32 device=0 workers=56 resume=False
+$ yolo task=detect mode=train model=david/object_detect/model/yolov8n.pt data=david/object_detect/data/det_data.yaml epochs=300 batch=32 device=0 workers=56 resume=False
+
+$ yolo task=detect mode=train model=david/object_detect/model/cuiwei.pt data=david/object_detect/data/det_data.yaml epochs=300 batch=32 device=0 workers=56 resume=False name=obj_det
 ```
 
 # Test

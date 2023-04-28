@@ -33,6 +33,11 @@ copy yolov8n.pt to project directory.
 ```
 $ conda activate yolov8_3.8
 $ yolo task=detect mode=train model=david/model/yolov8n.pt data=david/grddc/data/grddcDet.yaml epochs=300 batch=32 device=0 workers=56 resume=False name=grddc
+
+or
+
+$ yolo cfg=default_copy.yaml
+
 ```
 
 # Test
