@@ -1,29 +1,27 @@
 
+# Track remote fork warehouse
+```
+git remote add upstream https://github.com/ultralytics/yolov5.git
+(base) david@david-ubuntu20:yolov5$ git remote -v
 
-# Prepare datasets
-## labelme_to_yolov8.py
-input_dir: Dataset which generate by labelme, it must contains a label file and a jpg file.
-```
-$ cd david/datasets/
-$ python3 labelme_to_yolov.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/cuiwei --output_dir=./output
-```
-
-## Create test data
-```
-$ cd david/datasets/
-$ python3 generate_test_txt.py --input_dir=/home/david/dataset/detect/CBD/n2s_20220414_1800 --output_dir=./output
-```
+git fetch upstream
+git checkout master
+git merge upstream/master
 
 
-# Train
-copy yolov8n.pt to project directory.
-```
-$ yolo task=detect mode=train model=david/model/yolov8n.pt data=david/config/primaryDet.yaml epochs=300 batch=32 device=0 workers=56 resume=False
+
+
+
+
 ```
 
-# Test
-```
-$ yolo predict model=yolov8n.pt source="https://ultralytics.com/images/bus.jpg"
-$ yolo predict model=runs/detect/train/weights/best.pt source=david/datasets/output/test/
-```
-There are results in './runs/detect/predict'
+
+
+
+
+
+
+
+
+
+
