@@ -21,7 +21,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 #
-# python3 labelme_to_yolov8_type4.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/cuiwei --output_dir=./output
+# python3 labelme_to_yolov8_type6.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/cuiwei --output_dir=./output
 #
 ################################################################################
 
@@ -53,7 +53,7 @@ def prLightGray(skk): print("\033[97m {}\033[00m" .format(skk))
 def prBlack(skk): print("\033[98m {}\033[00m" .format(skk))
 
 
-def TermSigHandler(signum, frame) -> None:
+def term_sig_handler(signum, frame) -> None:
     sys.stdout.write('\r>> {}: \n\n\n***************************************\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
     sys.stdout.write('\r>> {}: Catched singal: {}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), signum))
     sys.stdout.write('\r>> {}: \n***************************************\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
@@ -62,7 +62,7 @@ def TermSigHandler(signum, frame) -> None:
     return
 
 
-def ParseArgs(args = None):
+def parse_args(args = None):
     """ parse the arguments. """
     parser = argparse.ArgumentParser(description = 'Prepare resized images/labels dataset for LPD')
     parser.add_argument(
@@ -92,7 +92,7 @@ def ParseArgs(args = None):
     return parser.parse_args(args)
 
 
-def MakeOuptDir(output_dir:str)->None:
+def make_ouput_dir(output_dir:str)->None:
     #if os.path.exists(output_dir):
     #    shutil.rmtree(output_dir)
     if not os.path.exists(output_dir):
@@ -302,7 +302,7 @@ def deal_one_image_label_files(
                 obj_cnt_list[5] += 1
                 Y_list.append( shape_obj['points'] )
         label_dict_list = []
-        label_dict_list.append( { 'person': person_list } )
+        label_dict_list.append( {'person': person_list } )
         label_dict_list.append( {'ride': ride_list} )
         label_dict_list.append( {'car': car_list} )
         label_dict_list.append( {'R': R_list} )
@@ -358,8 +358,7 @@ class DealDirFilesThread(threading.Thread):
         return
 
 
-
-def DealDirFiles(deal_dir:str, output_dir:str, output_size:List[int], obj_cnt_list)->None:
+def deal_dir_files(deal_dir:str, output_dir:str, output_size:List[int], obj_cnt_list)->None:
     img_list = []
     label_list = []
     for root, dirs, files in os.walk(deal_dir):
@@ -400,18 +399,18 @@ def DealDirFiles(deal_dir:str, output_dir:str, output_size:List[int], obj_cnt_li
 
 def main_func(args = None):
     """ Main function for data preparation. """
-    signal.signal(signal.SIGINT, TermSigHandler)
-    args = ParseArgs(args)
+    signal.signal(signal.SIGINT, term_sig_handler)
+    args = parse_args(args)
     output_size = (args.target_width, args.target_height)
     args.output_dir = os.path.abspath(args.output_dir)
     prYellow('output_dir: {}'.format(args.output_dir))
-    MakeOuptDir(args.output_dir)
+    make_ouput_dir(args.output_dir)
     obj_cnt_list = [0 for _ in range(6)]
     for root, dirs, files in os.walk(args.input_dir):
         for dir in dirs:
-            DealDirFiles(os.path.join(root, dir), args.output_dir, output_size, obj_cnt_list)
-    print("\n%10s %10s %10s %10s %10s %10s %10s %10s %10s %10s %10s %10s" %('person', 'ride', 'car', 'R', 'G', 'Y', 'total'))
-    print("%10d %10d %10d %10d %10d %10d %10d %10d %10d %10d %10d %10d\n" %(obj_cnt_list[0], obj_cnt_list[1], obj_cnt_list[2], obj_cnt_list[3], obj_cnt_list[4], obj_cnt_list[5], sum(obj_cnt_list)))
+            deal_dir_files(os.path.join(root, dir), args.output_dir, output_size, obj_cnt_list)
+    print("\n%10s %10s %10s %10s %10s %10s %10s" %('person', 'ride', 'car', 'R', 'G', 'Y', 'total'))
+    print("%10d %10d %10d %10d %10d %10d %10d\n" %(obj_cnt_list[0], obj_cnt_list[1], obj_cnt_list[2], obj_cnt_list[3], obj_cnt_list[4], obj_cnt_list[5], sum(obj_cnt_list)))
     sys.stdout.write('\r>> {}: Generate yolov dataset success, save dir:{}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), args.output_dir))
     sys.stdout.flush()
     return
