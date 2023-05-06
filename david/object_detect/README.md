@@ -4,7 +4,7 @@
 ## labelme_to_yolov.py
 input_dir: Dataset which generate by labelme, it must contains a label file and a jpg file.
 ```
-$ cd david/datasets/
+$ cd david/object_detect/datasets/
 $ python3 labelme_to_yolov.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/cuiwei --output_dir=./output
 
 $ python3 labelme_to_yolov.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/ecopark/haitian-20230428 --output_dir=./output
@@ -12,7 +12,7 @@ $ python3 labelme_to_yolov.py --target_width=1920 --target_height=1080 --input_d
 
 ## Create test data
 ```
-$ cd david/datasets/
+$ cd david/object_detect/datasets/
 $ python3 generate_test_txt.py --input_dir=/home/david/dataset/detect/CBD/n2s_20220414_1800 --output_dir=./output
 ```
 
@@ -31,3 +31,24 @@ $ yolo predict model=yolov8n.pt source="https://ultralytics.com/images/bus.jpg"
 $ yolo predict model=runs/detect/train/weights/best.pt source=david/datasets/output/test/
 ```
 There are results in './runs/detect/predict'
+
+
+# Deploy
+
+## Deploy on deepstream-6.0
+Reference: https://github.com/marcoslucianops/DeepStream-Yolo/blob/master/docs/YOLOv8.md
+
+```
+$ cd david/object_detect/deploy
+```
+Copy weight file to current directory.
+$ cp ./../../../runs/detect/obj_det/weights/best.pt ./
+```
+Generate the cfg, wts and labels.txt (if available) files
+```
+$ python3 gen_wts_yoloV8.py --size 640 -w best.pt
+```
+Copy the generated cfg, wts and labels.txt (if generated), files to the deepstream folder.
+
+
+
