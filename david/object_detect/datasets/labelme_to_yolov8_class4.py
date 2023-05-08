@@ -239,6 +239,8 @@ def generate_yolo_dataset(
                     yCenter = (float(one_point_list[0][1]) + objHeight/2)/height
                     yoloWidth = objWidth/width
                     yoloHeight = objHeight/height
+                    if (xCenter <= 0.0) or (yCenter <= 0.0) or (yoloWidth <= 0.0) or (yoloHeight <= 0.0):
+                        continue
                     #x1 = float(one_point_list[0][0]) / width
                     #y1 = float(one_point_list[0][1]) / height
                     #x2 = float(one_point_list[1][0]) / width
@@ -406,7 +408,7 @@ def main_func(args = None):
         for dir in dirs:
             deal_dir_files(os.path.join(root, dir), args.output_dir, output_size, obj_cnt_list)
     print("\n%10s %10s %10s %10s %10s" %('person', 'ride', 'car', 'lg',  'total'))
-    print("%10d %10d %10d %10d %10d\n" %(obj_cnt_list[0], obj_cnt_list[1], obj_cnt_list[2], obj_cnt_list[3], obj_cnt_list[4], obj_cnt_list[5], sum(obj_cnt_list)))
+    print("%10d %10d %10d %10d %10d\n" %(obj_cnt_list[0], obj_cnt_list[1], obj_cnt_list[2], obj_cnt_list[3], sum(obj_cnt_list)))
     sys.stdout.write('\r>> {}: Generate yolov dataset success, save dir:{}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), args.output_dir))
     sys.stdout.flush()
     return

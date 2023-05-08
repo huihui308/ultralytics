@@ -178,7 +178,15 @@ def GenerateKITTIDataset(img_file:str, label_dict_list, output_dir:str, deal_cnt
     return
 
 
-def GenerateYoloDataset(train_fp, val_fp, img_file:str, label_dict_list, output_dir:str, deal_cnt:int, output_size:List[int])->None:
+def generate_yolo_dataset(
+        train_fp, 
+        val_fp, 
+        img_file:str, 
+        label_dict_list, 
+        output_dir:str, 
+        deal_cnt:int, 
+        output_size:List[int]
+)->None:
     """ Create Yolo dataset. """
     #sys.stdout.write('\r>> {}: Deal file {}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), img_file))
     #sys.stdout.flush()
@@ -231,6 +239,8 @@ def GenerateYoloDataset(train_fp, val_fp, img_file:str, label_dict_list, output_
                     yCenter = (float(one_point_list[0][1]) + objHeight/2)/height
                     yoloWidth = objWidth/width
                     yoloHeight = objHeight/height
+                    if (xCenter <= 0.0) or (yCenter <= 0.0) or (yoloWidth <= 0.0) or (yoloHeight <= 0.0):
+                        continue
                     #x1 = float(one_point_list[0][0]) / width
                     #y1 = float(one_point_list[0][1]) / height
                     #x2 = float(one_point_list[1][0]) / width
@@ -239,7 +249,16 @@ def GenerateYoloDataset(train_fp, val_fp, img_file:str, label_dict_list, output_
     return
 
 
-def DealOneImageLabelFiles(train_fp, val_fp, img_file:str, label_file:str, output_dir:str, deal_cnt:int, output_size:List[int], obj_cnt_list)->None:
+def deal_one_image_label_files(
+        train_fp, 
+        val_fp, 
+        img_file:str, 
+        label_file:str, 
+        output_dir:str, 
+        deal_cnt:int, 
+        output_size:List[int], 
+        obj_cnt_list
+)->None:
     with open(label_file, 'r') as load_f:
         load_dict = json.load(load_f)
         shapes_objs = load_dict['shapes']
@@ -283,6 +302,9 @@ def DealOneImageLabelFiles(train_fp, val_fp, img_file:str, label_file:str, outpu
             elif shape_obj['label'] == 'plate':
                 obj_cnt_list[7] += 1
                 plate_list.append( shape_obj['points'] )
+            elif shape_obj['label'] == 'plate+':
+                obj_cnt_list[7] += 1
+                plate_list.append( shape_obj['points'] )
             elif shape_obj['label'] == 'R':
                 obj_cnt_list[8] += 1
                 R_list.append( shape_obj['points'] )
@@ -305,12 +327,12 @@ def DealOneImageLabelFiles(train_fp, val_fp, img_file:str, label_file:str, outpu
         label_dict_list.append( {'G': G_list} )
         label_dict_list.append( {'Y': Y_list} )
         #print( label_dict_list )
-        GenerateYoloDataset(train_fp, val_fp, img_file, label_dict_list, output_dir, deal_cnt, output_size)
+        generate_yolo_dataset(train_fp, val_fp, img_file, label_dict_list, output_dir, deal_cnt, output_size)
         #GenerateKITTIDataset(img_file, label_dict_list, output_dir, deal_cnt, output_size)
     return
 
 
-class DealDirFilesThread(threading.Thread):
+class deal_dir_filesThread(threading.Thread):
     def __init__(self, deal_dir:str, output_dir:str, output_size:List[int]):
         threading.Thread.__init__(self)
         self.deal_dir = deal_dir
@@ -350,12 +372,12 @@ class DealDirFilesThread(threading.Thread):
                 sys.stdout.write('\r>> {}: Image file {} and label file {} not fit err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), img_file, label_file))
                 sys.stdout.flush()
                 os._exit(2)
-            DealOneImageLabelFiles(img_file, label_file, self.output_dir, i, self.output_size)
+            deal_one_image_label_files(img_file, label_file, self.output_dir, i, self.output_size)
         return
 
 
 
-def DealDirFiles(deal_dir:str, output_dir:str, output_size:List[int], obj_cnt_list)->None:
+def deal_dir_files(deal_dir:str, output_dir:str, output_size:List[int], obj_cnt_list)->None:
     img_list = []
     label_list = []
     for root, dirs, files in os.walk(deal_dir):
@@ -390,7 +412,7 @@ def DealDirFiles(deal_dir:str, output_dir:str, output_size:List[int], obj_cnt_li
             sys.stdout.write('\r>> {}: Image file {} and label file {} not fit err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), img_file, label_file))
             sys.stdout.flush()
             os._exit(2)
-        DealOneImageLabelFiles(train_fp, val_fp, img_file, label_file, output_dir, i, output_size, obj_cnt_list)
+        deal_one_image_label_files(train_fp, val_fp, img_file, label_file, output_dir, i, output_size, obj_cnt_list)
     return
 
 
@@ -406,8 +428,8 @@ def main_func(args = None):
     dealThreadList = []
     for root, dirs, files in os.walk(args.input_dir):
         for dir in dirs:
-            #DealDirFiles(os.path.join(root, dir), args.output_dir, output_size)
-            deal_thread = DealDirFilesThread(os.path.join(root, dir), args.output_dir, output_size)
+            #deal_dir_files(os.path.join(root, dir), args.output_dir, output_size)
+            deal_thread = deal_dir_filesThread(os.path.join(root, dir), args.output_dir, output_size)
             dealThreadList.append(deal_thread)
     for one_thread in dealThreadList:
         one_thread.start()
@@ -417,7 +439,7 @@ def main_func(args = None):
     obj_cnt_list = [0 for _ in range(11)]
     for root, dirs, files in os.walk(args.input_dir):
         for dir in dirs:
-            DealDirFiles(os.path.join(root, dir), args.output_dir, output_size, obj_cnt_list)
+            deal_dir_files(os.path.join(root, dir), args.output_dir, output_size, obj_cnt_list)
     print("\n%10s %10s %10s %10s %10s %10s %10s %10s %10s %10s %10s %10s" %('person', 'bicycle', 'motorbike', 'tricycle', 'car', 'bus', 'truck', 'plate', 'R', 'G', 'Y', 'total'))
     print("%10d %10d %10d %10d %10d %10d %10d %10d %10d %10d %10d %10d\n" %(obj_cnt_list[0], obj_cnt_list[1], obj_cnt_list[2], obj_cnt_list[3], obj_cnt_list[4], obj_cnt_list[5], obj_cnt_list[6], obj_cnt_list[7], obj_cnt_list[8], obj_cnt_list[9], obj_cnt_list[10], sum(obj_cnt_list)))
     sys.stdout.write('\r>> {}: Generate yolov dataset success, save dir:{}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), args.output_dir))
