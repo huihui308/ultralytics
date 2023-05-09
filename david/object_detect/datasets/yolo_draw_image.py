@@ -291,7 +291,7 @@ def draw_rectangel_to_image(output_dir, img_file, label_file)->None:
     resave_file = os.path.join(output_dir, img_name + ".jpg")
     #print(resave_file)
     numClassDict = {'0':'person', '1':'bicycle', '2':'motorbike', '3':'tricycle', '4':'car', '5':'bus', '6':'truck', '7':'plate', '8':'R', '9':'G', '10':'Y'}
-    colourList = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 0, 0), (0, 255, 0)]
+    colourList = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255), (100, 0, 255), (255, 100, 0), (80, 255, 0), (100, 100, 255), (255, 80, 0), (80, 255, 80)]
     for one_line in open(label_file):
         #print(one_line)
         valList = one_line.split(' ')

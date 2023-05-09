@@ -4,28 +4,28 @@ input_dir: Dataset which generate by labelme, it must contains a label file and 
 ## class4
 ```
 $ cd david/object_detect/datasets/
-$ python3 labelme_to_yolov8_class4.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/CBD --output_dir=./output_class4
+$ python3 labelme_to_yolov_class4.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/CBD --output_dir=./output_class4
 
-$ python3 labelme_to_yolov8_class4.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/echo_park --output_dir=./output_class4
+$ python3 labelme_to_yolov_class4.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/echo_park --output_dir=./output_class4
 ```
 
 ## class6
 ```
 $ cd david/object_detect/datasets/
-$ python3 labelme_to_yolov8_class6.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/CBD --output_dir=./output_class6
+$ python3 labelme_to_yolov_class6.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/CBD --output_dir=./output_class6
 
-$ python3 labelme_to_yolov8_class6.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/echo_park --output_dir=./output_class6
+$ python3 labelme_to_yolov_class6.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/echo_park --output_dir=./output_class6
 ```
 
 ## class11
 input_dir: Dataset which generate by labelme, it must contains a label file and a jpg file.
 ```
 $ cd david/object_detect/datasets/
-$ python3 labelme_to_yolov8_class11.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/CBD --output_dir=./output_class11
+$ python3 labelme_to_yolov_class11.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/CBD --output_dir=./output_class11
 
-$ python3 labelme_to_yolov8_class11.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/echo_park --output_dir=./output_class11
+$ python3 labelme_to_yolov_class11.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/echo_park --output_dir=./output_class11
 
-$ python3 kitti_to_yolov8_class11.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/kitti --output_dir=./output_class11
+$ python3 kitti_to_yolov_class11.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/kitti --output_dir=./output_class11
 ```
 
 ## Create test data
