@@ -7,16 +7,16 @@ $ cd david/object_detect/datasets/
 ```
 labelme format:
 ```
-$ python3 labelme_to_yolov_class4.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/CBD --output_dir=./output_class4
-$ python3 labelme_to_yolov_class4.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/echo_park --output_dir=./output_class4
+$ python3 labelme_to_yolo.py --class_num=4 --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/CBD --output_dir=./output_class4
+$ python3 labelme_to_yolo.py --class_num=4 --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/echo_park --output_dir=./output_class4
 ```
 ktti format
 ```
-$ python3 kitti_to_yolov_class4.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/kitti --output_dir=./output_class4
+$ python3 kitti_to_yolo.py --class_num=4 --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/kitti --output_dir=./output_class4
 ```
 bdd format:
 ```
-$ python3 bdd_to_yolo_class4.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/bdd/bdd100k --output_dir=./output_class4
+$ python3 bdd_to_yolo.py --class_num=4 --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/bdd --output_dir=./output_class4
 ```
 
 ## class6
@@ -41,7 +41,7 @@ $ python3 kitti_to_yolov_class11.py --target_width=1920 --target_height=1080 --i
 ## Create test data
 ```
 $ cd david/object_detect/datasets/
-$ python3 generate_test_txt.py --input_dir=/home/david/dataset/detect/CBD/n2s_20220414_1800 --output_dir=./output
+$ python3 generate_test_txt.py --input_dir=/home/david/dataset/detect/CBD/n2s_20220414_1800 --output_dir=./output_class4
 ```
 
 

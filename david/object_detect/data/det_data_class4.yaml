@@ -16,7 +16,7 @@ test: test.txt  # 20288 of 40670 images, submit to https://competitions.codalab.
 # Classes
 names:
   0: person
-  1: ride
+  1: rider
   2: car
   3: lg
   

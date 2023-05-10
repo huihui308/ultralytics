@@ -21,7 +21,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 #
-# python3 labelme_to_yolov8_type4.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/CBD --output_dir=./output
+# python3 labelme_to_yolo.py --class_num=4 --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/CBD --output_dir=./output_class4
 #
 ################################################################################
 
@@ -76,6 +76,12 @@ def parse_args(args = None):
         type = str,
         required = True,
         help = "Ouput directory to resized images/labels."
+    )
+    parser.add_argument(
+        "--class_num",
+        type = int,
+        required = True,
+        help = "Class num. 4:{'person':'0', 'rider':'1', 'car':'2', 'lg':'3'}, 6:{'person':'0', 'rider':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
     )
     parser.add_argument(
         "--target_width",
@@ -178,18 +184,47 @@ def GenerateKITTIDataset(img_file:str, label_dict_list, output_dir:str, deal_cnt
     return
 
 
-def generate_yolo_dataset(
+def labelme2_class4_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_height)->None:
+    """ Create Yolo dataset. """
+    type_str = None
+    if shape_obj['label'] in ('person'):
+        type_str = '0'
+        obj_cnt_list[0] += 1
+    elif shape_obj['label'] in ('bicycle', 'motorbike', 'tricycle'):
+        type_str = '1'
+        obj_cnt_list[1] += 1
+    elif shape_obj['label'] in ('car', 'bus', 'truck'):
+        type_str = '2'
+        obj_cnt_list[2] += 1
+    elif shape_obj['label'] in ('R', 'G', 'Y'):
+        type_str = '3'
+        obj_cnt_list[3] += 1
+    else:
+        return
+    one_point_list = shape_obj['points']
+    objWidth = float(one_point_list[1][0]) - float(one_point_list[0][0])
+    objHeight = float(one_point_list[1][1]) - float(one_point_list[0][1])
+    xCenter = (float(one_point_list[0][0]) + objWidth/2)/img_width
+    yCenter = (float(one_point_list[0][1]) + objHeight/2)/img_height
+    yoloWidth = objWidth/img_width
+    yoloHeight = objHeight/img_height
+    if (xCenter <= 0.0) or (yCenter <= 0.0) or (yoloWidth <= 0.0) or (yoloHeight <= 0.0):
+        return
+    fp.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(type_str, xCenter, yCenter, yoloWidth, yoloHeight))
+    return
+
+
+def deal_one_image_label_files(
+        class_num, 
         train_fp, 
         val_fp, 
         img_file:str, 
-        label_dict_list, 
+        label_file:str, 
         output_dir:str, 
         deal_cnt:int, 
-        output_size:List[int]
+        output_size:List[int], 
+        obj_cnt_list
 )->None:
-    """ Create Yolo dataset. """
-    #sys.stdout.write('\r>> {}: Deal file {}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), img_file))
-    #sys.stdout.flush()
     save_image_dir = None
     save_label_dir = None
     save_fp = None
@@ -202,114 +237,25 @@ def generate_yolo_dataset(
         save_image_dir = os.path.join(output_dir, "train/images")
         save_label_dir = os.path.join(output_dir, "train/labels")
     dir_name, full_file_name = os.path.split(img_file)
-    sub_dir_name = dir_name.split('/')[-1]
-    save_file_name = sub_dir_name + "_" + str(random.randint(10000000, 99999999)).zfill(8)
-    #print( save_file_name )
-    # resize labels
-    #w, h = output_size
+    sub_dir_name0, sub_dir_name1 = dir_name.split('/')[-2], dir_name.split('/')[-1]
+    #print(sub_dir_name0, sub_dir_name1)
+    save_file_name = sub_dir_name0 + "_" + sub_dir_name1 + "_" + os.path.splitext(full_file_name)[0] + "_" + str(random.randint(100000000000, 999999999999)).zfill(12)
+    #print(save_file_name)
     img = cv2.imread(img_file)
-    (height, width, _) = img.shape
-    #ratio_w = float( float(w)/float(width) )
-    #ratio_h = float( float(h)/float(height) )
-    # resize images
-    resave_file = os.path.join(save_image_dir, save_file_name + ".jpg")
-    #image = Image.open(img_file)
-    #image.save(os.path.join(save_image_dir, save_file_name + ".jpg"))
-    #print(type(img_file))
+    (img_height, img_width, _) = img.shape
+    resave_file = os.path.join(save_image_dir, save_file_name + os.path.splitext(full_file_name)[-1])
     os.symlink(img_file, resave_file)
     #shutil.copyfile(img_file, resave_file)
     save_fp.write(resave_file + '\n')
     save_fp.flush()
-    classNumDict = {'person':'0', 'ride':'1', 'car':'2', 'lg':'3'}
-    with open(os.path.join(save_label_dir, save_file_name + ".txt"), "w") as f:
-        for obj_dict in label_dict_list:
-            for label_str, point_list in obj_dict.items():
-                #print(label_str)
-                #print(classNumDict[label_str])
-                if len(point_list) == 0:
-                    continue
-                for one_point_list in point_list:
-                    #print(one_point_list)
-                    if len(one_point_list) != 2:
-                        sys.stdout.write('\r>> {}: Label file point len err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-                        sys.stdout.flush()
-                        os._exit(2)
-                    objWidth = float(one_point_list[1][0]) - float(one_point_list[0][0])
-                    objHeight = float(one_point_list[1][1]) - float(one_point_list[0][1])
-                    xCenter = (float(one_point_list[0][0]) + objWidth/2)/width
-                    yCenter = (float(one_point_list[0][1]) + objHeight/2)/height
-                    yoloWidth = objWidth/width
-                    yoloHeight = objHeight/height
-                    if (xCenter <= 0.0) or (yCenter <= 0.0) or (yoloWidth <= 0.0) or (yoloHeight <= 0.0):
-                        continue
-                    #x1 = float(one_point_list[0][0]) / width
-                    #y1 = float(one_point_list[0][1]) / height
-                    #x2 = float(one_point_list[1][0]) / width
-                    #y2 = float(one_point_list[1][1]) / height
-                    f.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(classNumDict[label_str], xCenter, yCenter, yoloWidth, yoloHeight))
-    return
-
-
-def deal_one_image_label_files(
-        train_fp, 
-        val_fp, 
-        img_file:str, 
-        label_file:str, 
-        output_dir:str, 
-        deal_cnt:int, 
-        output_size:List[int], 
-        obj_cnt_list
-)->None:
-    with open(label_file, 'r') as load_f:
-        load_dict = json.load(load_f)
-        shapes_objs = load_dict['shapes']
-        person_list = []
-        ride_list = []
-        car_list = []
-        lg_list = []
-        for shape_obj in shapes_objs:
-            if shape_obj['label'] == 'person':
-                obj_cnt_list[0] += 1
-                if len(shape_obj['points']) != 2:
-                    sys.stdout.write('\r>> {}: Label file point format err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-                    sys.stdout.flush()
-                    os._exit(2)
-                person_list.append( shape_obj['points'] )
-            elif shape_obj['label'] == 'bicycle':
-                obj_cnt_list[1] += 1
-                ride_list.append( shape_obj['points'] )
-            elif shape_obj['label'] == 'motorbike':
-                obj_cnt_list[1] += 1
-                ride_list.append( shape_obj['points'] )
-            elif shape_obj['label'] == 'tricycle':
-                obj_cnt_list[1] += 1
-                ride_list.append( shape_obj['points'] )
-            elif shape_obj['label'] == 'car':
-                obj_cnt_list[2] += 1
-                car_list.append( shape_obj['points'] )
-            elif shape_obj['label'] == 'bus':
-                obj_cnt_list[2] += 1
-                car_list.append( shape_obj['points'] )
-            elif shape_obj['label'] == 'truck':
-                obj_cnt_list[2] += 1
-                car_list.append( shape_obj['points'] )
-            elif shape_obj['label'] == 'R':
-                obj_cnt_list[3] += 1
-                lg_list.append( shape_obj['points'] )
-            elif shape_obj['label'] == 'G':
-                obj_cnt_list[3] += 1
-                lg_list.append( shape_obj['points'] )
-            elif shape_obj['label'] == 'Y':
-                obj_cnt_list[3] += 1
-                lg_list.append( shape_obj['points'] )
-        label_dict_list = []
-        label_dict_list.append( {'person': person_list } )
-        label_dict_list.append( {'ride': ride_list} )
-        label_dict_list.append( {'car': car_list} )
-        label_dict_list.append( {'lg': lg_list} )
-        #print( label_dict_list )
-        generate_yolo_dataset(train_fp, val_fp, img_file, label_dict_list, output_dir, deal_cnt, output_size)
-        #GenerateKITTIDataset(img_file, label_dict_list, output_dir, deal_cnt, output_size)
+    #------
+    with open(os.path.join(save_label_dir, save_file_name + ".txt"), "w") as fp:
+        with open(label_file, 'r') as load_f:
+            json_data = json.load(load_f, encoding='utf-8')
+            shapes_objs = json_data['shapes']
+            for shape_obj in shapes_objs:
+                if class_num == 4:
+                    labelme2_class4_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_height)
     return
 
 
@@ -357,42 +303,30 @@ class DealDirFilesThread(threading.Thread):
         return
 
 
-def deal_dir_files(deal_dir:str, output_dir:str, output_size:List[int], obj_cnt_list)->None:
-    img_list = []
-    label_list = []
-    for root, dirs, files in os.walk(deal_dir):
-        #print(len(files))
-        for file in sorted(files):
-            #print(os.path.splitext(file)[-1])
-            if os.path.splitext(file)[-1] == '.json':
-                label_list.append( os.path.join(root, file) )
-            else:
-                img_list.append( os.path.join(root, file) )
-    if len(label_list) != len(img_list):
-        sys.stdout.write('\r>> {}: File len {}:{} err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), len(label_list), len(img_list)))
-        sys.stdout.flush()
-        os._exit(2)
-    #print(img_list)
-    img_label_list = []
-    for i in range( len(img_list) ):
-        img_label = []
-        img_label.append(img_list[i])
-        img_label.append(label_list[i])
-        img_label_list.append(img_label[:])
-    random.shuffle(img_label_list)
+def deal_dir_files(
+        class_num, 
+        img_label_list:str, 
+        output_dir:str, 
+        output_size:List[int], 
+        obj_cnt_list
+)->None:
     #print(img_label_list)
     train_fp = open(output_dir + "/train.txt", "a+")
     val_fp = open(output_dir + "/val.txt", "a+")
     pbar = enumerate(img_label_list)
-    pbar = tqdm(pbar, total=len(img_label_list), desc="Processing {0:>15}".format(deal_dir.split('/')[-1]), colour='blue', bar_format=TQDM_BAR_FORMAT)
+    pbar = tqdm(pbar, total=len(img_label_list), desc="Processing", colour='blue', bar_format=TQDM_BAR_FORMAT)
     for (i, img_label) in pbar:
         img_file = img_label[0]
         label_file = img_label[1]
-        if os.path.splitext(img_file)[0] != os.path.splitext(label_file)[0]:
+        img_file_name, _ = os.path.splitext( os.path.split(img_file)[1] )
+        label_file_name, _ = os.path.splitext( os.path.split(label_file)[1] )
+        if img_file_name != label_file_name:
             sys.stdout.write('\r>> {}: Image file {} and label file {} not fit err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), img_file, label_file))
             sys.stdout.flush()
             os._exit(2)
-        deal_one_image_label_files(train_fp, val_fp, img_file, label_file, output_dir, i, output_size, obj_cnt_list)
+        deal_one_image_label_files(class_num, train_fp, val_fp, img_file, label_file, output_dir, i, output_size, obj_cnt_list)
+    train_fp.close()
+    val_fp.close()
     return
 
 
@@ -404,12 +338,35 @@ def main_func(args = None):
     args.output_dir = os.path.abspath(args.output_dir)
     prYellow('output_dir: {}'.format(args.output_dir))
     make_ouput_dir(args.output_dir)
-    obj_cnt_list = [0 for _ in range(4)]
-    for root, dirs, files in os.walk(args.input_dir):
-        for dir in dirs:
-            deal_dir_files(os.path.join(root, dir), args.output_dir, output_size, obj_cnt_list)
-    print("\n%10s %10s %10s %10s %10s" %('person', 'ride', 'car', 'lg',  'total'))
-    print("%10d %10d %10d %10d %10d\n" %(obj_cnt_list[0], obj_cnt_list[1], obj_cnt_list[2], obj_cnt_list[3], sum(obj_cnt_list)))
+    #------
+    imgs_list = []
+    labels_list = []
+    for root, dirs, files in os.walk(args.input_dir, followlinks=True):
+        for one_file in sorted(files):
+            #print(os.path.splitext(one_file)[-1])
+            if os.path.splitext(one_file)[-1] == '.json':
+                labels_list.append( os.path.join(root, one_file) )
+            else:
+                imgs_list.append( os.path.join(root, one_file) )
+    #print(len(imgs_list), len(labels_list))
+    if len(labels_list) != len(imgs_list):
+        sys.stdout.write('\r>> {}: File len {}:{} err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), len(labels_list), len(imgs_list)))
+        sys.stdout.flush()
+        os._exit(2)
+    img_label_list = []
+    for i in range( len(imgs_list) ):
+        img_label = []
+        img_label.append(imgs_list[i])
+        img_label.append(labels_list[i])
+        img_label_list.append(img_label[:])
+    random.shuffle(img_label_list)
+    #print(len(img_label_list))
+    #------
+    obj_cnt_list = [ 0 for _ in range(args.class_num) ]
+    deal_dir_files(args.class_num, img_label_list, args.output_dir, output_size, obj_cnt_list)
+    if args.class_num == 4:
+        print("\n%10s %10s %10s %10s %10s" %('person', 'rider', 'car', 'lg',  'total'))
+        print("%10d %10d %10d %10d %10d\n" %(obj_cnt_list[0], obj_cnt_list[1], obj_cnt_list[2], obj_cnt_list[3], sum(obj_cnt_list)))
     sys.stdout.write('\r>> {}: Generate yolov dataset success, save dir:{}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), args.output_dir))
     sys.stdout.flush()
     return
