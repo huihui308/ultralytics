@@ -21,7 +21,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 #
-# python3 labelme_to_yolov8.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/cuiwei --output_dir=./output
+# python3 bdd_to_yolo.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/cuiwei --output_dir=./output
 #
 ################################################################################
 
@@ -76,6 +76,12 @@ def parse_args(args = None):
         type = str,
         required = True,
         help = "Ouput directory to resized images/labels."
+    )
+    parser.add_argument(
+        "--class_num",
+        type = int,
+        required = True,
+        help = "Class num. 4:{'person':'0', 'ride':'1', 'car':'2', 'lg':'3'}, 6:{'person':'0', 'ride':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
     )
     parser.add_argument(
         "--target_width",
