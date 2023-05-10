@@ -81,7 +81,7 @@ def parse_args(args = None):
         "--class_num",
         type = int,
         required = True,
-        help = "Class num. 4:{'person':'0', 'ride':'1', 'car':'2', 'lg':'3'}, 6:{'person':'0', 'ride':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
+        help = "Class num. 4:{'person':'0', 'rider':'1', 'car':'2', 'lg':'3'}, 6:{'person':'0', 'rider':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
     )
     parser.add_argument(
         "--target_width",
@@ -236,7 +236,7 @@ def main_func(args = None):
     for root, dirs, files in os.walk(args.input_dir):
         for dir in dirs:
             deal_dir_files(os.path.join(root, dir), args.output_dir, output_size, obj_cnt_list)
-    print("\n%10s %10s %10s %10s %10s" %('person', 'ride', 'car', 'lg',  'total'))
+    print("\n%10s %10s %10s %10s %10s" %('person', 'rider', 'car', 'lg',  'total'))
     print("%10d %10d %10d %10d %10d\n" %(obj_cnt_list[0], obj_cnt_list[1], obj_cnt_list[2], obj_cnt_list[3], sum(obj_cnt_list)))
     sys.stdout.write('\r>> {}: Generate yolov dataset success, save dir:{}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), args.output_dir))
     sys.stdout.flush()
