@@ -21,7 +21,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 #
-# python3 bdd_to_yolo.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/cuiwei --output_dir=./output
+# python3 bdd_to_yolo_class4.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/bdd/bdd100k --output_dir=./output_class4
 #
 ################################################################################
 
@@ -77,12 +77,14 @@ def parse_args(args = None):
         required = True,
         help = "Ouput directory to resized images/labels."
     )
+    """
     parser.add_argument(
         "--class_num",
         type = int,
         required = True,
         help = "Class num. 4:{'person':'0', 'rider':'1', 'car':'2', 'lg':'3'}, 6:{'person':'0', 'rider':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
     )
+    """
     parser.add_argument(
         "--target_width",
         type = int,
@@ -137,75 +139,85 @@ def deal_one_image_label_files(
         save_image_dir = os.path.join(output_dir, "train/images")
         save_label_dir = os.path.join(output_dir, "train/labels")
     dir_name, full_file_name = os.path.split(img_file)
-    sub_dir_name = dir_name.split('/')[-1]
-    save_file_name = sub_dir_name + "_" + str(random.randint(10000000, 99999999)).zfill(8)
+    sub_dir_name0, sub_dir_name1 = dir_name.split('/')[-2], dir_name.split('/')[-1]
+    #print(sub_dir_name0, sub_dir_name1)
+    save_file_name = sub_dir_name1 + "_" + os.path.splitext(full_file_name)[0] + "_" + str(random.randint(100000000000, 999999999999)).zfill(12)
+    #print(save_file_name)
     img = cv2.imread(img_file)
-    (height, width, _) = img.shape
-    resave_file = os.path.join(save_image_dir, save_file_name + ".png")
-    shutil.copyfile(img_file, resave_file)
+    (imgHeight, imgWidth, _) = img.shape
+    resave_file = os.path.join(save_image_dir, save_file_name + ".jpg")
+    os.symlink(img_file, resave_file)
+    #shutil.copyfile(img_file, resave_file)
     save_fp.write(resave_file + '\n')
     save_fp.flush()
     #------
     with open(os.path.join(save_label_dir, save_file_name + ".txt"), "w") as fp:
         with open(label_file, 'r') as load_f:
-            frames = json.load(load_f)
-            for index, frame in enumerate(frames):
-                for lop_obj in frame['objects']:
-                    if 'box2d' not in label:
+            jsonData = json.load(load_f, encoding='utf-8')
+            #print(jsonData)
+            frames = jsonData['frames']
+            for frame in frames:
+                objects = frame['objects']
+                #print(type(objects))
+                for lopObj in objects:
+                    if 'box2d' not in lopObj:
                         continue
                     #categorys = ['car', 'bus', 'person', 'bike', 'truck', 'motor', 'train', 'rider', 'traffic sign', 'traffic light']
                     type_str = None
-                    if frame['category'] in ('person'):
+                    if lopObj['category'] in ('person'):
                         type_str = '0'
                         obj_cnt_list[0] += 1
-                    elif frame['category'] in ('bike', 'motor', 'rider'):
+                    elif lopObj['category'] in ('bike', 'motor', 'rider'):
                         type_str = '1'
                         obj_cnt_list[1] += 1
-                    elif frame['category'] in ('car', 'bus', 'truck'):
+                    elif lopObj['category'] in ('car', 'bus', 'truck'):
                         type_str = '2'
                         obj_cnt_list[2] += 1
-                    elif frame['category'] in ('traffic light'):
+                    elif lopObj['category'] in ('traffic light'):
                         type_str = '3'
                         obj_cnt_list[3] += 1
+                    else:
+                        continue
                     #------
-                    xy = label['box2d']
+                    xy = lopObj['box2d']
                     if (xy['x1'] >= xy['x2']) or (xy['y1'] >= xy['y2']):
                         continue
-                    #print(xy['x1'], xy['y1'], xy['x2'], xy['y2'], categorys.index(label['category']))
+                    #print(xy['x1'], xy['y1'], xy['x2'], xy['y2'], categorys.index(lopObj['category']))
                     objWidth = xy['x2'] - xy['x1']
                     objHeight = xy['y2'] - xy['y1']
-                    xCenter = (xy['x1'] + objWidth/2)/width
-                    yCenter = (xy['y1'] + objHeight/2)/height
-                    yoloWidth = objWidth/width
-                    yoloHeight = objHeight/height
+                    xCenter = (xy['x1'] + objWidth/2)/imgWidth
+                    yCenter = (xy['y1'] + objHeight/2)/imgHeight
+                    yoloWidth = objWidth/imgWidth
+                    yoloHeight = objHeight/imgHeight
                     fp.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(type_str, xCenter, yCenter, yoloWidth, yoloHeight))
     return
 
 
 def deal_dir_files(deal_dir:str, output_dir:str, output_size:List[int], obj_cnt_list)->None:
-    img_list = []
-    label_list = []
+    imgs_list = []
+    labels_list = []
     for root, dirs, files in os.walk(deal_dir):
         #print(len(files))
         for file in sorted(files):
             #print(os.path.splitext(file)[-1])
             if os.path.splitext(file)[-1] == '.json':
-                label_list.append( os.path.join(root, file) )
+                labels_list.append( os.path.join(root, file) )
             else:
-                img_list.append( os.path.join(root, file) )
-    if len(label_list) != len(img_list):
-        sys.stdout.write('\r>> {}: File len {}:{} err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), len(label_list), len(img_list)))
+                imgs_list.append( os.path.join(root, file) )
+    #print(len(imgs_list), len(labels_list))
+    if len(labels_list) != len(imgs_list):
+        sys.stdout.write('\r>> {}: File len {}:{} err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), len(labels_list), len(imgs_list)))
         sys.stdout.flush()
         os._exit(2)
-    #print(img_list)
+    #print(imgs_list)
     img_label_list = []
-    for i in range( len(img_list) ):
+    for i in range( len(imgs_list) ):
         img_label = []
-        img_label.append(img_list[i])
-        img_label.append(label_list[i])
+        img_label.append(imgs_list[i])
+        img_label.append(labels_list[i])
         img_label_list.append(img_label[:])
     random.shuffle(img_label_list)
-    #print(img_label_list)
+    #print(len(img_label_list))
     train_fp = open(output_dir + "/train.txt", "a+")
     val_fp = open(output_dir + "/val.txt", "a+")
     pbar = enumerate(img_label_list)

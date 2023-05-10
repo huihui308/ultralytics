@@ -21,7 +21,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 #
-# python3 labelme_to_yolov8.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/cuiwei --output_dir=./output
+# python3 kitti_to_yolov_class11.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/cuiwei --output_dir=./output
 #
 ################################################################################
 
@@ -205,7 +205,8 @@ def deal_one_image_label_files(
     img = cv2.imread(img_file)
     (height, width, _) = img.shape
     resave_file = os.path.join(save_image_dir, save_file_name + ".png")
-    shutil.copyfile(img_file, resave_file)
+    os.symlink(img_file, resave_file)
+    #shutil.copyfile(img_file, resave_file)
     save_fp.write(resave_file + '\n')
     save_fp.flush()
     #------

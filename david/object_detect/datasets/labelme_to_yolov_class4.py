@@ -216,7 +216,8 @@ def generate_yolo_dataset(
     #image = Image.open(img_file)
     #image.save(os.path.join(save_image_dir, save_file_name + ".jpg"))
     #print(type(img_file))
-    shutil.copyfile(img_file, resave_file)
+    os.symlink(img_file, resave_file)
+    #shutil.copyfile(img_file, resave_file)
     save_fp.write(resave_file + '\n')
     save_fp.flush()
     classNumDict = {'person':'0', 'ride':'1', 'car':'2', 'lg':'3'}

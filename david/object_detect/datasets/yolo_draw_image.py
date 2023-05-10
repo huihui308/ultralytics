@@ -21,7 +21,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 #
-# python3 yolo_draw_image.py --input_dir=/home/david/code/yolo/ultralytics/david/object_detect/datasets/11/val --output_dir=./222
+# python3 yolo_draw_image.py --class_num=4 --input_dir=/home/david/code/yolo/ultralytics/david/object_detect/datasets/kitti_test/train --output_dir=./draw_images
 #
 ################################################################################
 
@@ -76,6 +76,12 @@ def parse_args(args = None):
         type = str,
         required = True,
         help = "Ouput directory to resized images/labels."
+    )
+    parser.add_argument(
+        "--class_num",
+        type = int,
+        required = True,
+        help = "Class num. 4:{'person':'0', 'rider':'1', 'car':'2', 'lg':'3'}, 6:{'person':'0', 'rider':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
     )
     """
     parser.add_argument(
@@ -283,19 +289,27 @@ def deal_dir_files(deal_dir:str, output_dir:str, output_size:List[int], obj_cnt_
     return
 
 
-def draw_rectangel_to_image(output_dir, img_file, label_file)->None:
+def draw_rectangel_to_image(class_num, output_dir, img_file, label_file)->None:
     img_name, _ = os.path.splitext( os.path.split(img_file)[1] )
     #print(img_name)
     image = cv2.imread(img_file)
     (height, width, _) = image.shape
     resave_file = os.path.join(output_dir, img_name + ".jpg")
     #print(resave_file)
-    numClassDict = {'0':'person', '1':'bicycle', '2':'motorbike', '3':'tricycle', '4':'car', '5':'bus', '6':'truck', '7':'plate', '8':'R', '9':'G', '10':'Y'}
+    numClassDict4 = {'0':'person', '1':'rider', '2':'car', '3':'lg'}
+    numClassDict6 = {'0':'person', '1':'rider', '2':'car', '3':'R', '4':'G', '5':'Y'}
+    numClassDict11 = {'0':'person', '1':'bicycle', '2':'motorbike', '3':'tricycle', '4':'car', '5':'bus', '6':'truck', '7':'plate', '8':'R', '9':'G', '10':'Y'}
     colourList = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255), (100, 0, 255), (255, 100, 0), (80, 255, 0), (100, 100, 255), (255, 80, 0), (80, 255, 80)]
     for one_line in open(label_file):
         #print(one_line)
         valList = one_line.split(' ')
-        typeStr = numClassDict[valList[0]]
+        typeStr = None
+        if class_num == 4:
+            typeStr = numClassDict4[valList[0]]
+        elif class_num == 6:
+            typeStr = numClassDict6[valList[0]]
+        elif class_num == 11:
+            typeStr = numClassDict11[valList[0]]
         xCenter = int(float(valList[1])*width)
         yCenter = int(float(valList[2])*height)
         yoloWidth = int(float(valList[3])*width)
@@ -357,7 +371,7 @@ def main_func(args = None):
             sys.stdout.write('\r>> {}: Image file {} and label file {} not fit err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), img_file, label_file))
             sys.stdout.flush()
             os._exit(2)
-        draw_rectangel_to_image(args.output_dir, img_file, label_file)
+        draw_rectangel_to_image(args.class_num, args.output_dir, img_file, label_file)
     return
 
 
