@@ -1,6 +1,6 @@
 #
 # cmd:
-#       python3 mat2yolo.py --mat_file=/home/david/dataset/classification/people/annotation.mat
+#       python3 mat2_yolo.py.py --mat_file=/home/david/dataset/classification/people/annotation.mat
 #
 import os
 import scipy
@@ -45,6 +45,8 @@ def parse_args(args = None):
 def mat2txt(data, key):
     subdata = data[key]
     dfdata = pd.DataFrame(subdata)
+    if key == 'attributes':
+        print(dfdata)
     dfdata.to_csv("%s.txt" % key, index=False)
 
 
@@ -55,7 +57,7 @@ def main_func(args = None):
     print(args.mat_file)
     pa100k_data = scipy.io.loadmat(args.mat_file)
     print(type(pa100k_data))
-    print(pa100k_data)
+    #print(pa100k_data)
     train_image_name = [pa100k_data['train_images_name'][i][0][0] for i in range(80000)]
     val_image_name = [pa100k_data['val_images_name'][i][0][0] for i in range(10000)]
     test_image_name = [pa100k_data['test_images_name'][i][0][0] for i in range(10000)]
