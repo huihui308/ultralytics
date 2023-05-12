@@ -1,6 +1,6 @@
 #
 # cmd:
-#       rm -rf output_class26;python3 pa100k2_yolo.py --mat_file=/home/david/dataset/classification/people/annotation.mat --images_dir=/home/david/dataset/classification/people/release_data/release_data --output_dir=./output_class26
+#       rm -rf output_class26;python3 split_pa100k2.py --mat_file=/home/david/dataset/classification/people/annotation.mat --images_dir=/home/david/dataset/classification/people/release_data/release_data --output_dir=./output_class26
 #
 """
 - 性别：男、女
@@ -31,7 +31,7 @@ import os, sys, math, shutil, random, datetime, signal, argparse
 
 TQDM_BAR_FORMAT = '{l_bar}{bar:40}| {n_fmt}/{total_fmt} {elapsed}'
 g_labels_name = [ 
-    "女性", "少年", "中年", "老年", "长袖", "短袖", "长裤", "短裤", "长裙", "短裙", 
+    "女性", "少年", "中年", "老年", "长袖", "短袖", "长裤", "短裙", 
     "上红", "上橙", "上黄", "上绿", "上蓝", "上紫", "上粉", "上黑", "上白", "上灰", "上棕", 
     "下红", "下橙", "下黄", "下绿", "下蓝", "下紫", "下粉", "下黑", "下白", "下灰", "下棕"
 ]
@@ -154,17 +154,46 @@ def generate_data(
         for (i, one_label) in enumerate(label):
             if one_label == 0:
                 continue
-            labels_cnt_list[i] += 1
-            #save_file_name = os.path.splitext(image_name)[0] + "_" + str(random.randint(0, 999999999999)).zfill(12) + ".jpg"
-            #dst_image = os.path.join(output_dir + "/" + save_type + "/class" + str(i).zfill(4), save_file_name)
+            save_num = 0
+            if i == 0:
+                save_num = 0
+                labels_cnt_list[save_num] += 1
+            elif i == 1:
+                save_num = 3
+                labels_cnt_list[save_num] += 1
+            elif i == 2:
+                save_num = 2
+                labels_cnt_list[save_num] += 1
+            elif i == 3:
+                save_num = 1
+                labels_cnt_list[save_num] += 1
+            elif i == 13:
+                save_num = 5
+                labels_cnt_list[save_num] += 1
+            elif (i == 14) or (i == 21):
+                save_num = 4
+                labels_cnt_list[save_num] += 1
+            elif i == 22:
+                save_num = 6
+                labels_cnt_list[save_num] += 1
+            elif i == 23:
+                save_num = 5
+                labels_cnt_list[save_num] += 1
+            elif i == 24:
+                save_num = 7
+                labels_cnt_list[save_num] += 1
+            else:
+                continue
+            save_file_name = os.path.splitext(image_name)[0] + "_" + str(random.randint(0, 999999999999)).zfill(12) + ".jpg"
+            dst_image = os.path.join(output_dir + "/" + save_type + "/class" + str(save_num).zfill(4), save_file_name)
             #print(src_image, dst_image)
-            #os.symlink(src_image, dst_image)
+            os.symlink(src_image, dst_image)
     print("\n")
     for one_label in g_labels_name:
-        print("{0:^3}".format(one_label[:4]), end='')
+        print("{0:^2} ".format(one_label[:4]), end='')
     print("\n")
     for label_val in labels_cnt_list:
-        print("{0:^3}".format(label_val), end='')
+        print("{0:^4} ".format(label_val), end='')
     print("\n")
     return
 

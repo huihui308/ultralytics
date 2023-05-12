@@ -39,38 +39,36 @@ boots
   const std::string lower_colors[] = {"红色", "橙色", "黄色", "绿色", "蓝色", "紫色", "粉色", "黑色", "白色", "灰色", "棕色", "未知"};
 ```
 
-class000 性别: Female
-class001 青少年: AgeLess18
-class002 中年: Age18-60
-class003 老年: AgeOver60
-class004 长袖: LongCoat;LongSleeve
-class005 短袖: ShortSleeve;Shorts
-class006 长裤: Trousers
-class007 短裤:
-class008 长裙:
-class009 短裙: Skirt&Dress
-class010 上红:
-class011 上橙:
-class012 上黄:
-class013 上绿:
-class014 上蓝:
-class015 上紫:
-class016 上粉:
-class017 上黑:
-class018 上白:
-class019 上灰
-class020 上棕:
-class021 下红:
-class022 下橙:
-class023 下黄:
-class024 下绿:
-class025 下蓝:
-class026 下紫:
-class027 下粉:
-class028 下黑:
-class029 下白:
-class030 下灰:
-class031 下棕:
+class0000 性别: Female
+class0001 青少年: AgeLess18
+class0002 中年: Age18-60
+class0003 老年: AgeOver60
+class0004 长袖: LongCoat;LongSleeve
+class0005 短袖: ShortSleeve;Shorts
+class0006 长裤: Trousers
+class0007 短裙: Skirt&Dress
+class0008 上红:
+class0009 上橙:
+class0010 上黄:
+class0011 上绿:
+class0012 上蓝:
+class0013 上紫:
+class0014 上粉:
+class0015 上黑:
+class0016 上白:
+class0017 上灰
+class0018 上棕:
+class0019 下红:
+class0020 下橙:
+class0021 下黄:
+class0022 下绿:
+class0023 下蓝:
+class0024 下紫:
+class0025 下粉:
+class0026 下黑:
+class0027 下白:
+class0028 下灰:
+class0029 下棕:
 
 
 
