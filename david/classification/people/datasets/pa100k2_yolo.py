@@ -1,7 +1,24 @@
 #
 # cmd:
-#       rm -rf output_class26;python3 mat2_yolo.py --mat_file=/home/david/dataset/classification/people/annotation.mat --images_dir=/home/david/dataset/classification/people/release_data/release_data --output_dir=./output_class26
+#       rm -rf output_class26;python3 pa100k2_yolo.py --mat_file=/home/david/dataset/classification/people/annotation.mat --images_dir=/home/david/dataset/classification/people/release_data/release_data --output_dir=./output_class26
 #
+"""
+- 性别：男、女
+- 年龄：小于18、18-60、大于60
+- 朝向：朝前、朝后、侧面
+- 配饰：眼镜、帽子、无
+- 正面持物：是、否
+- 包：双肩包、单肩包、手提包
+- 上衣风格：带条纹、带logo、带格子、拼接风格
+- 下装风格：带条纹、带图案
+- 短袖上衣：是、否
+- 长袖上衣：是、否
+- 长外套：是、否
+- 长裤：是、否
+- 短裤：是、否
+- 短裙&裙子：是、否
+- 穿靴：是、否
+"""
 import os
 import scipy
 import scipy.io
@@ -13,6 +30,12 @@ import os, sys, math, shutil, random, datetime, signal, argparse
 
 
 TQDM_BAR_FORMAT = '{l_bar}{bar:40}| {n_fmt}/{total_fmt} {elapsed}'
+g_labels_name = [ 
+    "女性", "少年", "中年", "老年", "长袖", "短袖", "长裤", "短裤", "长裙", "短裙", 
+    "上红", "上橙", "上黄", "上绿", "上蓝", "上紫", "上粉", "上黑", "上白", "上灰", "上棕", 
+    "下红", "下橙", "下黄", "下绿", "下蓝", "下紫", "下粉", "下黑", "下白", "下灰", "下棕"
+]
+
 
 
 def prRed(skk): print("\033[91m {}\033[00m" .format(skk))
@@ -58,37 +81,20 @@ def parse_args(args = None):
     return parser.parse_args(args)
 
 
-def make_ouput_dir(output_dir:str)->None:
+def make_ouput_dir(output_dir:str, labels_dir_list:List[str])->None:
     #if os.path.exists(output_dir):
     #    shutil.rmtree(output_dir)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    for lopDir0 in ("train", "val"):
-        firstDir = os.path.join(output_dir, lopDir0)
-        if not os.path.exists(firstDir):
-            #shutil.rmtree(firstDir)
-            os.makedirs(firstDir)
-        for lopDir1 in ("images", "labels"):
-            secondDir = os.path.join(firstDir, lopDir1)
-            if not os.path.exists(secondDir):
-                os.makedirs(secondDir)
-    return
-
-
-def make_ouput_dir(output_dir:str, labels_dir_list)->None:
-    #if os.path.exists(output_dir):
-    #    shutil.rmtree(output_dir)
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    for lopDir0 in ("train", "val"):
-        firstDir = os.path.join(output_dir, lopDir0)
-        if not os.path.exists(firstDir):
-            #shutil.rmtree(firstDir)
-            os.makedirs(firstDir)
-        for lopDir1 in labels_dir_list:
-            secondDir = os.path.join(firstDir, lopDir1)
-            if not os.path.exists(secondDir):
-                os.makedirs(secondDir)
+    for lop_dir0 in ("train", "val"):
+        first_dir = os.path.join(output_dir, lop_dir0)
+        if not os.path.exists(first_dir):
+            #shutil.rmtree(first_dir)
+            os.makedirs(first_dir)
+        for lop_dir1 in labels_dir_list:
+            second_dir = os.path.join(first_dir, lop_dir1)
+            if not os.path.exists(second_dir):
+                os.makedirs(second_dir)
     return
 
 
@@ -96,7 +102,6 @@ def get_labels(pa100k_data, labels_list, labels_dir_list)->None:
     subdata = pa100k_data['attributes']
     df_data = pd.DataFrame(subdata)
     #print(df_data)
-    #print("----------------------\n")
     for index, row in df_data.items():
         #print(type(row))
         for (i, dir) in row.items():
@@ -107,16 +112,18 @@ def get_labels(pa100k_data, labels_list, labels_dir_list)->None:
     return
 
 
-def parse_train_data(
+def generate_data(
         images_type:str,
         label_type:str,
         save_type:str,
-        images_dir, 
-        output_dir, 
+        images_dir:str, 
+        output_dir:str, 
+        labels_list:List[str],
         pa100k_data
 )->None:
+    labels_cnt_list = [ 0 for _ in range(len(g_labels_name)) ]
     images_list = []
-    labels_list = []
+    labels_val_list = []
     subdata = pa100k_data[images_type]
     df_data = pd.DataFrame(subdata)
     #print(type(df_data))
@@ -130,14 +137,14 @@ def parse_train_data(
     #print(type(df_data))
     for index, row in df_data.iterrows():
         #print(type(row))
-        labels_list.append(row.tolist())
-    #print(labels_list[-1])
-    #print(len(images_list), len(labels_list))
-    if len(images_list) != len(labels_list):
-        prRed('images_list {} != labels_list {} err'.format(len(images_list), len(labels_list)))
+        labels_val_list.append(row.tolist())
+    #print(labels_val_list[-1])
+    #print(len(images_list), len(labels_val_list))
+    if len(images_list) != len(labels_val_list):
+        prRed('images_list {} != labels_val_list {} err'.format(len(images_list), len(labels_val_list)))
         return
-    pbar = enumerate(labels_list)
-    pbar = tqdm(pbar, total=len(labels_list), desc="Processing {}".format(save_type), colour='blue', bar_format=TQDM_BAR_FORMAT)
+    pbar = enumerate(labels_val_list)
+    pbar = tqdm(pbar, total=len(labels_val_list), desc="Processing {:>8}".format(save_type), colour='blue', bar_format=TQDM_BAR_FORMAT)
     for (index, label) in pbar:
         if len(label) != 26:
             prRed('len(label) length {} err, not equal 26'.format(len(label)))
@@ -147,14 +154,22 @@ def parse_train_data(
         for (i, one_label) in enumerate(label):
             if one_label == 0:
                 continue
-            save_file_name = os.path.splitext(image_name)[0] + "_" + str(random.randint(0, 999999999999)).zfill(12) + ".jpg"
-            dst_image = os.path.join(output_dir + "/" + save_type + "/class" + str(i).zfill(4), save_file_name)
+            labels_cnt_list[i] += 1
+            #save_file_name = os.path.splitext(image_name)[0] + "_" + str(random.randint(0, 999999999999)).zfill(12) + ".jpg"
+            #dst_image = os.path.join(output_dir + "/" + save_type + "/class" + str(i).zfill(4), save_file_name)
             #print(src_image, dst_image)
-            os.symlink(src_image, dst_image)
+            #os.symlink(src_image, dst_image)
+    print("\n")
+    for one_label in g_labels_name:
+        print("{0:^3}".format(one_label[:4]), end='')
+    print("\n")
+    for label_val in labels_cnt_list:
+        print("{0:^3}".format(label_val), end='')
+    print("\n")
     return
 
 
-def mat2_yolo(images_dir, output_dir, pa100k_data)->None:
+def pa100k2_yolo(images_dir, output_dir, pa100k_data)->None:
     labels_list = []
     labels_dir_list = []
     get_labels(pa100k_data, labels_list, labels_dir_list)
@@ -164,9 +179,9 @@ def mat2_yolo(images_dir, output_dir, pa100k_data)->None:
         for label in labels_list:
             fp.write(label + '\n')
     #df_data.to_csv("%s.txt" % key, index=False)
-    #parse_train_data('train_images_name', 'train_label', 'train', images_dir, output_dir, pa100k_data)
-    parse_train_data('test_images_name', 'test_label', 'train', images_dir, output_dir, pa100k_data)
-    #parse_train_data('val_images_name', 'val_label', 'val', images_dir, output_dir, pa100k_data)
+    #generate_data('train_images_name', 'train_label', 'train', images_dir, output_dir, pa100k_data)
+    generate_data('test_images_name', 'test_label', 'train', images_dir, output_dir, labels_list, pa100k_data)
+    generate_data('val_images_name', 'val_label', 'val', images_dir, output_dir, labels_list, pa100k_data)
     return
 
 
@@ -174,8 +189,8 @@ def main_func(args = None):
     """ Main function for data preparation. """
     signal.signal(signal.SIGINT, term_sig_handler)
     args = parse_args(args)
-    prYellow('output_dir: {}'.format(args.output_dir))
-    print(args.mat_file)
+    prYellow('output_dir: {}\n'.format(args.output_dir))
+    #print(args.mat_file)
     pa100k_data = scipy.io.loadmat(args.mat_file)
     #print(type(pa100k_data))
     #print(pa100k_data)
@@ -185,12 +200,11 @@ def main_func(args = None):
     test_image_name = [pa100k_data['test_images_name'][i][0][0] for i in range(10000)]
     print(type(train_image_name), type(val_image_name), type(test_image_name))
     train_label, val_label, test_label = pa100k_data['train_label'], pa100k_data['val_label'], pa100k_data['test_label']
-    """
     key_list = ["attributes", "test_images_name", "test_label",
                 "train_images_name", "train_label",
                 "val_images_name", "val_label"]
-    #for key in key_list:
-    mat2_yolo(args.images_dir, args.output_dir, pa100k_data)
+    """
+    pa100k2_yolo(args.images_dir, args.output_dir, pa100k_data)
     return
 
 
