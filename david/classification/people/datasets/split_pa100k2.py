@@ -118,7 +118,6 @@ def generate_data(
         save_type:str,
         images_dir:str, 
         output_dir:str, 
-        labels_list:List[str],
         pa100k_data
 )->None:
     labels_cnt_list = [ 0 for _ in range(len(g_labels_name)) ]
@@ -198,7 +197,7 @@ def generate_data(
     return
 
 
-def pa100k2_yolo(images_dir, output_dir, pa100k_data)->None:
+def split_pa100k2(images_dir, output_dir, pa100k_data)->None:
     labels_list = []
     labels_dir_list = []
     get_labels(pa100k_data, labels_list, labels_dir_list)
@@ -208,9 +207,9 @@ def pa100k2_yolo(images_dir, output_dir, pa100k_data)->None:
         for label in labels_list:
             fp.write(label + '\n')
     #df_data.to_csv("%s.txt" % key, index=False)
-    #generate_data('train_images_name', 'train_label', 'train', images_dir, output_dir, pa100k_data)
-    generate_data('test_images_name', 'test_label', 'train', images_dir, output_dir, labels_list, pa100k_data)
-    generate_data('val_images_name', 'val_label', 'val', images_dir, output_dir, labels_list, pa100k_data)
+    generate_data('train_images_name', 'train_label', 'train', images_dir, output_dir, pa100k_data)
+    generate_data('test_images_name', 'test_label', 'train', images_dir, output_dir, pa100k_data)
+    generate_data('val_images_name', 'val_label', 'val', images_dir, output_dir, pa100k_data)
     return
 
 
@@ -233,7 +232,7 @@ def main_func(args = None):
                 "train_images_name", "train_label",
                 "val_images_name", "val_label"]
     """
-    pa100k2_yolo(args.images_dir, args.output_dir, pa100k_data)
+    split_pa100k2(args.images_dir, args.output_dir, pa100k_data)
     return
 
 
