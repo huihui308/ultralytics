@@ -52,9 +52,41 @@ brand: unknown, shunfeng, jingdong, youzheng, zhongtong, yuantong, shentong, deb
 
 
 
+class0000:前有棚无棚
+后有棚无棚
+后有箱
 
+class0003:红色
+橙色
+黄色
+绿色
+蓝色
+紫色
+粉色
+黑色
+白色
+灰色
+棕色
 
+class0014:快递
+外卖
+货运
+载人
 
+class0018:顺丰
+京东
+邮政
+中通
+圆通
+申通
+德邦
+韵达
+天天
+百世
+丹鸟
+天猫
+海皇
+class0031:未知
 
 
 
