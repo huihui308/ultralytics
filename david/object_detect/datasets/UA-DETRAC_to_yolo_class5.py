@@ -21,7 +21,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 #
-# python3 bdd_to_yolo_class4.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/bdd/bdd100k --output_dir=./output_class4
+# rm -rf ./test_output_class5;python3 UA-DETRAC_to_yolo_class5.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/UA-DETRAC --output_dir=./test_output_class5
 #
 ################################################################################
 
@@ -37,9 +37,11 @@ import threading
 from tqdm import tqdm
 from PIL import Image
 from typing import List
+from xml.dom.minidom import parse
 import os, sys, math, shutil, random, datetime, signal, argparse
 
 
+categories_list = ['person', 'rider', 'tricycle', 'car', 'lg']
 TQDM_BAR_FORMAT = '{l_bar}{bar:40}| {n_fmt}/{total_fmt} {elapsed}'
 
 
@@ -62,7 +64,7 @@ def term_sig_handler(signum, frame)->None:
     return
 
 
-def parse_args(args = None):
+def parse_input_args(args = None):
     """ parse the arguments. """
     parser = argparse.ArgumentParser(description = 'Prepare resized images/labels dataset for LPD')
     parser.add_argument(
@@ -105,13 +107,13 @@ def make_ouput_dir(output_dir:str)->None:
     #    shutil.rmtree(output_dir)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    for lopDir0 in ("train", "val"):
-        firstDir = os.path.join(output_dir, lopDir0)
-        if not os.path.exists(firstDir):
-            #shutil.rmtree(firstDir)
-            os.makedirs(firstDir)
-        for lopDir1 in ("images", "labels"):
-            secondDir = os.path.join(firstDir, lopDir1)
+    for lop_dir0 in ("train", "val"):
+        first_dir = os.path.join(output_dir, lop_dir0)
+        if not os.path.exists(first_dir):
+            #shutil.rmtree(first_dir)
+            os.makedirs(first_dir)
+        for lop_dir1 in ("images", "labels"):
+            secondDir = os.path.join(first_dir, lop_dir1)
             if not os.path.exists(secondDir):
                 os.makedirs(secondDir)
     return
@@ -121,7 +123,8 @@ def deal_one_image_label_files(
         train_fp, 
         val_fp, 
         img_file:str, 
-        label_file:str, 
+        #label_file:str, 
+        targets, 
         output_dir:str, 
         deal_cnt:int, 
         output_size:List[int], 
@@ -141,10 +144,10 @@ def deal_one_image_label_files(
     dir_name, full_file_name = os.path.split(img_file)
     sub_dir_name0, sub_dir_name1 = dir_name.split('/')[-2], dir_name.split('/')[-1]
     #print(sub_dir_name0, sub_dir_name1)
-    save_file_name = sub_dir_name1 + "_" + os.path.splitext(full_file_name)[0] + "_" + str(random.randint(100000000000, 999999999999)).zfill(12)
+    save_file_name = sub_dir_name1 + "_" + os.path.splitext(full_file_name)[0] + "_" + str(random.randint(0, 999999999999)).zfill(12)
     #print(save_file_name)
     img = cv2.imread(img_file)
-    (imgHeight, imgWidth, _) = img.shape
+    (img_height, img_width, _) = img.shape
     resave_file = os.path.join(save_image_dir, save_file_name + ".jpg")
     os.symlink(img_file, resave_file)
     #shutil.copyfile(img_file, resave_file)
@@ -152,104 +155,90 @@ def deal_one_image_label_files(
     save_fp.flush()
     #------
     with open(os.path.join(save_label_dir, save_file_name + ".txt"), "w") as fp:
-        with open(label_file, 'r') as load_f:
-            jsonData = json.load(load_f, encoding='utf-8')
-            #print(jsonData)
-            frames = jsonData['frames']
-            for frame in frames:
-                objects = frame['objects']
-                #print(type(objects))
-                for lopObj in objects:
-                    if 'box2d' not in lopObj:
-                        continue
-                    #categorys = ['car', 'bus', 'person', 'bike', 'truck', 'motor', 'train', 'rider', 'traffic sign', 'traffic light']
-                    type_str = None
-                    if lopObj['category'] in ('person'):
-                        type_str = '0'
-                        obj_cnt_list[0] += 1
-                    elif lopObj['category'] in ('bike', 'motor', 'rider'):
-                        type_str = '1'
-                        obj_cnt_list[1] += 1
-                    elif lopObj['category'] in ('car', 'bus', 'truck'):
-                        type_str = '2'
-                        obj_cnt_list[2] += 1
-                    elif lopObj['category'] in ('traffic light'):
-                        type_str = '3'
-                        obj_cnt_list[3] += 1
-                    else:
-                        continue
-                    #------
-                    xy = lopObj['box2d']
-                    if (xy['x1'] >= xy['x2']) or (xy['y1'] >= xy['y2']):
-                        continue
-                    #print(xy['x1'], xy['y1'], xy['x2'], xy['y2'], categorys.index(lopObj['category']))
-                    objWidth = xy['x2'] - xy['x1']
-                    objHeight = xy['y2'] - xy['y1']
-                    xCenter = (xy['x1'] + objWidth/2)/imgWidth
-                    yCenter = (xy['y1'] + objHeight/2)/imgHeight
-                    yoloWidth = objWidth/imgWidth
-                    yoloHeight = objHeight/imgHeight
-                    fp.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(type_str, xCenter, yCenter, yoloWidth, yoloHeight))
+        for one_target in targets:
+            box_attr = one_target.getElementsByTagName('box')[0]
+            obj_left = float( box_attr.getAttribute('left') )
+            obj_top = float( box_attr.getAttribute('top') )
+            obj_width = float( box_attr.getAttribute('width') )
+            obj_height = float( box_attr.getAttribute('height') )
+            type_attr = one_target.getElementsByTagName('attribute')[0]
+            vehicle_type = type_attr.getAttribute('vehicle_type')
+            #print(left, top, width, height, vehicle_type)
+            if vehicle_type in ('car', 'van', 'bus'):
+                type_str = '3'
+                obj_cnt_list[3] += 1                
+            else:
+                #prRed('vehicle_type \'{}\' err'.format(vehicle_type))
+                continue
+            x_center = (obj_left + obj_width/2)/img_width
+            y_center = (obj_top + obj_height/2)/img_height
+            yolo_width = obj_width/img_width
+            yolo_height = obj_height/img_height
+            fp.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(type_str, x_center, y_center, yolo_width, yolo_height))
     return
 
 
 def deal_dir_files(deal_dir:str, output_dir:str, output_size:List[int], obj_cnt_list)->None:
-    imgs_list = []
-    labels_list = []
-    for root, dirs, files in os.walk(deal_dir):
-        #print(len(files))
-        for file in sorted(files):
-            #print(os.path.splitext(file)[-1])
-            if os.path.splitext(file)[-1] == '.json':
-                labels_list.append( os.path.join(root, file) )
-            else:
-                imgs_list.append( os.path.join(root, file) )
-    #print(len(imgs_list), len(labels_list))
-    if len(labels_list) != len(imgs_list):
-        sys.stdout.write('\r>> {}: File len {}:{} err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), len(labels_list), len(imgs_list)))
-        sys.stdout.flush()
-        os._exit(2)
-    #print(imgs_list)
-    img_label_list = []
-    for i in range( len(imgs_list) ):
-        img_label = []
-        img_label.append(imgs_list[i])
-        img_label.append(labels_list[i])
-        img_label_list.append(img_label[:])
-    random.shuffle(img_label_list)
-    #print(len(img_label_list))
     train_fp = open(output_dir + "/train.txt", "a+")
     val_fp = open(output_dir + "/val.txt", "a+")
-    pbar = enumerate(img_label_list)
-    pbar = tqdm(pbar, total=len(img_label_list), desc="Processing {0:>15}".format(deal_dir.split('/')[-1]), colour='blue', bar_format=TQDM_BAR_FORMAT)
-    for (i, img_label) in pbar:
-        img_file = img_label[0]
-        label_file = img_label[1]
-        img_file_name, _ = os.path.splitext( os.path.split(img_file)[1] )
-        label_file_name, _ = os.path.splitext( os.path.split(label_file)[1] )
-        if img_file_name != label_file_name:
-        #if os.path.splitext(img_file)[0] != os.path.splitext(label_file)[0]:
-            sys.stdout.write('\r>> {}: Image file {} and label file {} not fit err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), img_file, label_file))
-            sys.stdout.flush()
-            os._exit(2)
-        deal_one_image_label_files(train_fp, val_fp, img_file, label_file, output_dir, i, output_size, obj_cnt_list)
+    #------
+    xml_dir = os.path.join(deal_dir, 'xml')
+    images_dir = os.path.join(deal_dir, 'images')
+    #print(deal_dir, xml_dir, images_dir)
+    # get image and xml tuple list
+    for root, dirs, files in os.walk(xml_dir):
+        #print(len(files))
+        pbar = enumerate(files)
+        pbar = tqdm(pbar, total=len(files), desc="Processing {0:>15}".format(deal_dir.split('/')[-1]), colour='blue', bar_format=TQDM_BAR_FORMAT)
+        for (i, one_file) in pbar:
+        #for one_file in files:
+            #print(os.path.splitext(one_file)[-1])
+            file_name, file_type = os.path.splitext(one_file)
+            #print(file_name, file_type)
+            if file_type != '.xml':
+                prRed('File {} formate error'.format(one_file))
+                continue
+            xml_image_dir = os.path.join(images_dir, file_name)
+            if not os.path.exists(xml_image_dir):
+                prRed('Image dir {} not exist'.format(xml_image_dir))
+            #
+            xml_dir_file = os.path.join(root, one_file)
+            dom = parse(xml_dir_file)
+            data = dom.documentElement
+            frames = data.getElementsByTagName('frame')
+            for one_frame in frames:
+                image_file_name = 'img' + str( one_frame.getAttribute('num') ).zfill(5) + '.jpg'
+                img_file = os.path.join(xml_image_dir, image_file_name)
+                if not os.path.exists(img_file):
+                    prRed('Image dir {} not exist'.format(img_file))
+                #print(img_file)
+                targets = one_frame.getElementsByTagName('target')
+                deal_one_image_label_files(train_fp, val_fp, img_file, targets, output_dir, i, output_size, obj_cnt_list)
+    train_fp.close()
+    val_fp.close()
     return
 
 
 def main_func(args = None):
     """ Main function for data preparation. """
     signal.signal(signal.SIGINT, term_sig_handler)
-    args = parse_args(args)
+    args = parse_input_args(args)
     output_size = (args.target_width, args.target_height)
     args.output_dir = os.path.abspath(args.output_dir)
     prYellow('output_dir: {}'.format(args.output_dir))
     make_ouput_dir(args.output_dir)
-    obj_cnt_list = [0 for _ in range(4)]
-    for root, dirs, files in os.walk(args.input_dir):
-        for dir in dirs:
-            deal_dir_files(os.path.join(root, dir), args.output_dir, output_size, obj_cnt_list)
-    print("\n%10s %10s %10s %10s %10s" %('person', 'rider', 'car', 'lg',  'total'))
-    print("%10d %10d %10d %10d %10d\n" %(obj_cnt_list[0], obj_cnt_list[1], obj_cnt_list[2], obj_cnt_list[3], sum(obj_cnt_list)))
+    obj_cnt_list = [0 for _ in range( len(categories_list) )]
+    deal_dir_list = ['train', 'test']
+    for lop_dir in deal_dir_list:
+        deal_dir_files(os.path.join(args.input_dir, lop_dir), args.output_dir, output_size, obj_cnt_list)
+    print("\n")
+    for category in categories_list:
+        print("%10s " %(category), end='')
+    print("%10s" %('sum'))
+    for i in range( len(categories_list) ):
+        print("%10d " %(obj_cnt_list[i]), end='')
+    print("%10d" %(sum(obj_cnt_list)))
+    print("\n")
     sys.stdout.write('\r>> {}: Generate yolov dataset success, save dir:{}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), args.output_dir))
     sys.stdout.flush()
     return

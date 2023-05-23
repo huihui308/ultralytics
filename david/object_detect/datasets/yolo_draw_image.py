@@ -297,19 +297,22 @@ def draw_rectangel_to_image(class_num, output_dir, img_file, label_file)->None:
     resave_file = os.path.join(output_dir, img_name + ".jpg")
     #print(resave_file)
     numClassDict4 = {'0':'person', '1':'rider', '2':'car', '3':'lg'}
+    numClassDict5 = {'0':'person', '1':'rider', '2':'tricycle', '3':'car', '4':'lg'}
     numClassDict6 = {'0':'person', '1':'rider', '2':'car', '3':'R', '4':'G', '5':'Y'}
     numClassDict11 = {'0':'person', '1':'bicycle', '2':'motorbike', '3':'tricycle', '4':'car', '5':'bus', '6':'truck', '7':'plate', '8':'R', '9':'G', '10':'Y'}
     colourList = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255), (100, 0, 255), (255, 100, 0), (80, 255, 0), (100, 100, 255), (255, 80, 0), (80, 255, 80)]
     for one_line in open(label_file):
         #print(one_line)
         valList = one_line.split(' ')
-        typeStr = None
+        type_str = None
         if class_num == 4:
-            typeStr = numClassDict4[valList[0]]
+            type_str = numClassDict4[valList[0]]
+        elif class_num == 5:
+            type_str = numClassDict5[valList[0]]
         elif class_num == 6:
-            typeStr = numClassDict6[valList[0]]
+            type_str = numClassDict6[valList[0]]
         elif class_num == 11:
-            typeStr = numClassDict11[valList[0]]
+            type_str = numClassDict11[valList[0]]
         xCenter = int(float(valList[1])*width)
         yCenter = int(float(valList[2])*height)
         yoloWidth = int(float(valList[3])*width)
@@ -325,7 +328,7 @@ def draw_rectangel_to_image(class_num, output_dir, img_file, label_file)->None:
         image = cv2.rectangle(image, start_point, end_point, color, thickness)
         font = cv2.FONT_HERSHEY_SIMPLEX
         fontScale = 1
-        image = cv2.putText(image, typeStr, start_point, font, 
+        image = cv2.putText(image, type_str, start_point, font, 
                    fontScale, color, thickness - 1, cv2.LINE_AA)
         cv2.imwrite(resave_file, image)
     return
