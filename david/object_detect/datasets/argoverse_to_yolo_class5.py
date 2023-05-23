@@ -21,7 +21,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 #
-# rm -rf ./test_output_class5;python3 UA-DETRAC_to_yolo_class5.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/UA-DETRAC --output_dir=./test_output_class5
+# rm -rf ./test_output_class5;python3 argoverse_to_yolo_class5.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/Argoverse-1.1 --output_dir=./test_output_class5
 #
 ################################################################################
 
@@ -33,10 +33,10 @@ from __future__ import print_function
 
 import cv2
 import json
+import threading
 from tqdm import tqdm
-#from PIL import Image
+from PIL import Image
 from typing import List
-from xml.dom.minidom import parse
 import os, sys, math, shutil, random, datetime, signal, argparse
 
 
@@ -122,8 +122,8 @@ def deal_one_image_label_files(
         train_fp, 
         val_fp, 
         img_file:str, 
-        #label_file:str, 
         targets, 
+        categories_dict:dict,
         output_dir:str, 
         deal_cnt:int, 
         output_size:List[int], 
@@ -155,20 +155,31 @@ def deal_one_image_label_files(
     #------
     with open(os.path.join(save_label_dir, save_file_name + ".txt"), "w") as fp:
         for one_target in targets:
-            box_attr = one_target.getElementsByTagName('box')[0]
-            obj_left = float( box_attr.getAttribute('left') )
-            obj_top = float( box_attr.getAttribute('top') )
-            obj_width = float( box_attr.getAttribute('width') )
-            obj_height = float( box_attr.getAttribute('height') )
-            type_attr = one_target.getElementsByTagName('attribute')[0]
-            vehicle_type = type_attr.getAttribute('vehicle_type')
-            #print(left, top, width, height, vehicle_type)
-            if vehicle_type in ('car', 'van', 'bus'):
-                type_str = '3'
-                obj_cnt_list[3] += 1                
-            else:
-                #prRed('vehicle_type \'{}\' err'.format(vehicle_type))
+            if one_target[0] not in categories_dict:
                 continue
+            type_str = None
+            if categories_dict[ one_target[0] ] in ('person'):
+                type_str = '0'
+                obj_cnt_list[0] += 1
+            elif categories_dict[ one_target[0] ] in ('bicycle', 'motorcycle'):
+                type_str = '1'
+                obj_cnt_list[1] += 1
+            elif categories_dict[ one_target[0] ] in ('car', 'bus', 'truck'):
+                type_str = '3'
+                obj_cnt_list[3] += 1
+            elif categories_dict[ one_target[0] ] in ('traffic_light'):
+                type_str = '4'
+                obj_cnt_list[4] += 1
+            elif categories_dict[ one_target[0] ] in ('stop_sign'):
+                continue
+            else:
+                prRed('Category {} not support, continue'.format(categories_dict[ one_target[0] ]))
+                continue
+            #print( one_target[1] )
+            obj_left = float( one_target[1][0] )
+            obj_top = float( one_target[1][1] )
+            obj_width = float( one_target[1][2] )
+            obj_height = float( one_target[1][3] )
             x_center = (obj_left + obj_width/2)/img_width
             y_center = (obj_top + obj_height/2)/img_height
             yolo_width = obj_width/img_width
@@ -177,10 +188,60 @@ def deal_one_image_label_files(
     return
 
 
-def deal_dir_files(deal_dir:str, output_dir:str, output_size:List[int], obj_cnt_list)->None:
+def deal_dir_files(
+        json_file:str,
+        deal_dir:str, 
+        output_dir:str, 
+        output_size:List[int], 
+        obj_cnt_list
+)->None:
     train_fp = open(output_dir + "/train.txt", "a+")
     val_fp = open(output_dir + "/val.txt", "a+")
     #------
+    categories_dict = {}
+    img_id_dict = {}
+    with open(json_file, "r") as fp:
+        json_data = json.load(fp, encoding='utf-8')
+        for one_category in json_data['categories']:
+            categories_dict[one_category['id']] = one_category['name']
+        print(categories_dict)
+        for lop_img in json_data['images']:
+            img_id_dict[lop_img['name']] = lop_img['id']
+        #print( len(img_id_dict), img_id_dict[100], deal_dir )
+        imgs_list = [ '' for _ in range( len(img_id_dict) ) ]
+        for root, dirs, files in os.walk(deal_dir):
+            for one_file in files:
+                file_name, file_type = os.path.splitext(one_file)
+                if file_type not in ('.jpg', '.png', '.bmp'):
+                    prRed('File {} format not support'.format(file_type))
+                    continue
+                #print(file_name)
+                if one_file not in img_id_dict:
+                    continue
+                imgs_list[ img_id_dict[one_file] ] = os.path.join(root, one_file)
+        #print(imgs_list[100])
+        boxes_list = [ [] for _ in range( len(img_id_dict) ) ]
+        for one_label in json_data['annotations']:
+            category_id_box_tuple = (one_label['category_id'], one_label['bbox'])
+            boxes_list[one_label['image_id']].append( category_id_box_tuple )
+        #print( len(boxes_list[100]) )
+        if len(boxes_list) != len(imgs_list):
+            prRed('boxes count {} not equal imgs count {}, return'.format(len(boxes_list), len(imgs_list)))
+            return
+        print("\n")
+        pbar = enumerate(imgs_list)
+        pbar = tqdm(pbar, total=len(imgs_list), desc="Processing {0:>15}".format(deal_dir.split('/')[-1]), colour='blue', bar_format=TQDM_BAR_FORMAT)
+        for (i, one_img) in pbar:
+        #for (i, one_img) in enumerate(imgs_list):
+            deal_one_image_label_files(train_fp, val_fp, one_img, boxes_list[i], categories_dict, output_dir, i, output_size, obj_cnt_list)
+        print("\n")
+    train_fp.close()
+    val_fp.close()
+    return
+
+
+
+
     xml_dir = os.path.join(deal_dir, 'xml')
     images_dir = os.path.join(deal_dir, 'images')
     #print(deal_dir, xml_dir, images_dir)
@@ -213,8 +274,6 @@ def deal_dir_files(deal_dir:str, output_dir:str, output_size:List[int], obj_cnt_
                 #print(img_file)
                 targets = one_frame.getElementsByTagName('target')
                 deal_one_image_label_files(train_fp, val_fp, img_file, targets, output_dir, i, output_size, obj_cnt_list)
-    train_fp.close()
-    val_fp.close()
     return
 
 
@@ -227,9 +286,10 @@ def main_func(args = None):
     prYellow('output_dir: {}'.format(args.output_dir))
     make_ouput_dir(args.output_dir)
     obj_cnt_list = [0 for _ in range( len(categories_list) )]
-    deal_dir_list = ['train', 'test']
+    deal_dir_list = ['train', 'val']
     for lop_dir in deal_dir_list:
-        deal_dir_files(os.path.join(args.input_dir, lop_dir), args.output_dir, output_size, obj_cnt_list)
+        json_file = os.path.join(args.input_dir, lop_dir + '.json')
+        deal_dir_files(json_file, os.path.join(args.input_dir, lop_dir), args.output_dir, output_size, obj_cnt_list)
     print("\n")
     for category in categories_list:
         print("%10s " %(category), end='')

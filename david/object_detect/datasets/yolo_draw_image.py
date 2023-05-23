@@ -21,7 +21,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 #
-# python3 yolo_draw_image.py --class_num=4 --input_dir=/home/david/code/yolo/ultralytics/david/object_detect/datasets/kitti_test/train --output_dir=./draw_images
+# rm -rf ./draw_images;python3 yolo_draw_image.py --class_num=4 --input_dir=/home/david/code/yolo/ultralytics/david/object_detect/datasets/kitti_test/train --output_dir=./draw_images
 #
 ################################################################################
 
