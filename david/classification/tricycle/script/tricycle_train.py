@@ -8,4 +8,5 @@ model = YOLO('yolov8n-cls.pt')  # load a pretrained model (recommended for train
 model = YOLO('yolov8n-cls.yaml').load('yolov8n-cls.pt')  # build from YAML and transfer weights
 
 # Train the model
-model.train(data='mnist160', epochs=100, imgsz=64)
+#model.train(data='mnist160', epochs=100, imgsz=64)
+model.train(data='/home/david/code/yolo/ultralytics/david/classification/tricycle/datasets/tricycle_datasets', epochs=100, imgsz=64)
