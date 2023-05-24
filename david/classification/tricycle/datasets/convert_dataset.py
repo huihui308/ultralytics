@@ -220,10 +220,10 @@ def main_func(args = None):
     deal_files(files_list, args.output_dir, obj_cnt_list)
     print("\n")
     for i in range(len(obj_cnt_list)):
-        print("%3s  " %(str(i).zfill(3)), end="")
+        print("%4s " %(str(i).zfill(3)), end="")
     print("\n")
     for val in obj_cnt_list:
-        print("%3d  " %(val), end="")
+        print("%4d " %(val), end="")
     print("\n")
     return
 

@@ -6,17 +6,26 @@
 
 
 # Train
+Put 'yolov8n-cls.pt  yolov8n.pt' to dir '/home/david/code/yolo/ultralytics/david/classification/tricycle/script'
+```
+$ conda activate yolov8_3.8
+$ cd /home/david/code/yolo/ultralytics/david/classification/tricycle/script
+$ 
+```
+
 ```
 $ yolo task=classify mode=train model=yolov8n-cls.pt data={dataset.location} epochs=50 imgsz=128
 ```
 
 # Val
 ```
+$ conda activate yolov8_3.8
 $ yolo task=classify mode=val model={HOME}/runs/classify/train/weights/best.pt data={dataset.location}
 ```
 
 # Inference
 ```
+$ conda activate yolov8_3.8
 $ yolo task=classify mode=predict model={HOME}/runs/classify/train/weights/best.pt conf=0.25 source={dataset.location}/test/overripe
 ```
 

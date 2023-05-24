@@ -141,8 +141,13 @@ def deal_one_image_label_files(
         save_image_dir = os.path.join(output_dir, "train/images")
         save_label_dir = os.path.join(output_dir, "train/labels")
     dir_name, full_file_name = os.path.split(img_file)
-    sub_dir_name0, sub_dir_name1 = dir_name.split('/')[-2], dir_name.split('/')[-1]
-    #print(sub_dir_name0, sub_dir_name1)
+    sub_dir_list = dir_name.split('/')
+    if len(sub_dir_list) < 1:
+        prRed('dir_name {} err'.format(dir_name))
+        return
+    sub_dir_name1 = sub_dir_list[-1]
+    #sub_dir_name0, sub_dir_name1 = dir_name.split('/')[-2], dir_name.split('/')[-1]
+    #print(#, sub_dir_name1)
     save_file_name = sub_dir_name1 + "_" + os.path.splitext(full_file_name)[0] + "_" + str(random.randint(0, 999999999999)).zfill(12)
     #print(save_file_name)
     img = cv2.imread(img_file)
@@ -206,6 +211,8 @@ def deal_dir_files(
             categories_dict[one_category['id']] = one_category['name']
         print(categories_dict)
         for lop_img in json_data['images']:
+            if lop_img['name'] in img_id_dict:
+                prRed('Dict already exist key {}'.format(lop_img['name']))
             img_id_dict[lop_img['name']] = lop_img['id']
         #print( len(img_id_dict), img_id_dict[100], deal_dir )
         imgs_list = [ '' for _ in range( len(img_id_dict) ) ]
@@ -217,6 +224,7 @@ def deal_dir_files(
                     continue
                 #print(file_name)
                 if one_file not in img_id_dict:
+                    prRed('File {} not in dict'.format(one_file))
                     continue
                 imgs_list[ img_id_dict[one_file] ] = os.path.join(root, one_file)
         #print(imgs_list[100])
@@ -228,52 +236,17 @@ def deal_dir_files(
         if len(boxes_list) != len(imgs_list):
             prRed('boxes count {} not equal imgs count {}, return'.format(len(boxes_list), len(imgs_list)))
             return
-        print("\n")
+        #print("\n")
         pbar = enumerate(imgs_list)
         pbar = tqdm(pbar, total=len(imgs_list), desc="Processing {0:>15}".format(deal_dir.split('/')[-1]), colour='blue', bar_format=TQDM_BAR_FORMAT)
         for (i, one_img) in pbar:
-        #for (i, one_img) in enumerate(imgs_list):
+            if not os.path.exists(one_img):
+                prRed('Image file {} not exist, continue'.format(one_img))
+                continue
             deal_one_image_label_files(train_fp, val_fp, one_img, boxes_list[i], categories_dict, output_dir, i, output_size, obj_cnt_list)
-        print("\n")
+        #print("\n")
     train_fp.close()
     val_fp.close()
-    return
-
-
-
-
-    xml_dir = os.path.join(deal_dir, 'xml')
-    images_dir = os.path.join(deal_dir, 'images')
-    #print(deal_dir, xml_dir, images_dir)
-    # get image and xml tuple list
-    for root, dirs, files in os.walk(xml_dir):
-        #print(len(files))
-        pbar = enumerate(files)
-        pbar = tqdm(pbar, total=len(files), desc="Processing {0:>15}".format(deal_dir.split('/')[-1]), colour='blue', bar_format=TQDM_BAR_FORMAT)
-        for (i, one_file) in pbar:
-        #for one_file in files:
-            #print(os.path.splitext(one_file)[-1])
-            file_name, file_type = os.path.splitext(one_file)
-            #print(file_name, file_type)
-            if file_type != '.xml':
-                prRed('File {} formate error'.format(one_file))
-                continue
-            xml_image_dir = os.path.join(images_dir, file_name)
-            if not os.path.exists(xml_image_dir):
-                prRed('Image dir {} not exist'.format(xml_image_dir))
-            #
-            xml_dir_file = os.path.join(root, one_file)
-            dom = parse(xml_dir_file)
-            data = dom.documentElement
-            frames = data.getElementsByTagName('frame')
-            for one_frame in frames:
-                image_file_name = 'img' + str( one_frame.getAttribute('num') ).zfill(5) + '.jpg'
-                img_file = os.path.join(xml_image_dir, image_file_name)
-                if not os.path.exists(img_file):
-                    prRed('Image dir {} not exist'.format(img_file))
-                #print(img_file)
-                targets = one_frame.getElementsByTagName('target')
-                deal_one_image_label_files(train_fp, val_fp, img_file, targets, output_dir, i, output_size, obj_cnt_list)
     return
 
 
@@ -286,6 +259,7 @@ def main_func(args = None):
     prYellow('output_dir: {}'.format(args.output_dir))
     make_ouput_dir(args.output_dir)
     obj_cnt_list = [0 for _ in range( len(categories_list) )]
+    #deal_dir_list = ['val']
     deal_dir_list = ['train', 'val']
     for lop_dir in deal_dir_list:
         json_file = os.path.join(args.input_dir, lop_dir + '.json')
