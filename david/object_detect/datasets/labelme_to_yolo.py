@@ -40,6 +40,8 @@ from typing import List
 import os, sys, math, shutil, random, datetime, signal, argparse
 
 
+categories4_list = ['person', 'rider', 'car', 'lg']
+categories5_list = ['person', 'rider', 'tricycle', 'car', 'lg']
 TQDM_BAR_FORMAT = '{l_bar}{bar:40}| {n_fmt}/{total_fmt} {elapsed}'
 
 
@@ -81,7 +83,7 @@ def parse_args(args = None):
         "--class_num",
         type = int,
         required = True,
-        help = "Class num. 4:{'person':'0', 'rider':'1', 'car':'2', 'lg':'3'}, 6:{'person':'0', 'rider':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
+        help = "Class num. 4:{'person':'0', 'rider':'1', 'car':'2', 'lg':'3'}, 5:{'person':'0', 'rider':'1', 'tricycle':'2', 'car':'3', 'lg':'4'}, 6:{'person':'0', 'rider':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
     )
     parser.add_argument(
         "--target_width",
@@ -113,6 +115,50 @@ def make_ouput_dir(output_dir:str)->None:
             if not os.path.exists(secondDir):
                 os.makedirs(secondDir)
     return
+
+
+class DealDirFilesThread(threading.Thread):
+    def __init__(self, deal_dir:str, output_dir:str, output_size:List[int]):
+        threading.Thread.__init__(self)
+        self.deal_dir = deal_dir
+        self.output_dir = output_dir
+        self.output_size = output_size
+
+    def run(self):
+        sys.stdout.write('\r>> {}: Deal dir: {}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self.deal_dir))
+        sys.stdout.flush()
+        img_list = []
+        label_list = []
+        for root, dirs, files in os.walk(self.deal_dir):
+            #print(len(files))
+            for file in sorted(files):
+                #print(os.path.splitext(file)[-1])
+                if os.path.splitext(file)[-1] == '.json':
+                    label_list.append( os.path.join(root, file) )
+                else:
+                    img_list.append( os.path.join(root, file) )
+        if len(label_list) != len(img_list):
+            sys.stdout.write('\r>> {}: File len {}:{} err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), len(label_list), len(img_list)))
+            sys.stdout.flush()
+            os._exit(2)
+        #print(img_list)
+        img_label_list = []
+        for i in range( len(img_list) ):
+            img_label = []
+            img_label.append(img_list[i])
+            img_label.append(label_list[i])
+            img_label_list.append(img_label[:])
+        random.shuffle(img_label_list)
+        #print(img_label_list)
+        for (i, img_label) in enumerate(img_label_list):
+            img_file = img_label[0]
+            label_file = img_label[1]
+            if os.path.splitext(img_file)[0] != os.path.splitext(label_file)[0]:
+                sys.stdout.write('\r>> {}: Image file {} and label file {} not fit err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), img_file, label_file))
+                sys.stdout.flush()
+                os._exit(2)
+            deal_one_image_label_files(img_file, label_file, self.output_dir, i, self.output_size)
+        return
 
 
 # https://blog.csdn.net/Just_do_myself/article/details/118656543
@@ -196,21 +242,60 @@ def labelme2_class4_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_height
     elif shape_obj['label'] in ('car', 'bus', 'truck'):
         type_str = '2'
         obj_cnt_list[2] += 1
-    elif shape_obj['label'] in ('R', 'G', 'Y'):
+    elif shape_obj['label'] in ('R', 'G', 'Y', 'B'):
         type_str = '3'
         obj_cnt_list[3] += 1
+    elif shape_obj['label'] in ('plate', 'plate+'):
+        return
     else:
+        prRed('Label {} not support, return'.format(shape_obj['label']))
         return
     one_point_list = shape_obj['points']
-    objWidth = float(one_point_list[1][0]) - float(one_point_list[0][0])
-    objHeight = float(one_point_list[1][1]) - float(one_point_list[0][1])
-    xCenter = (float(one_point_list[0][0]) + objWidth/2)/img_width
-    yCenter = (float(one_point_list[0][1]) + objHeight/2)/img_height
-    yoloWidth = objWidth/img_width
-    yoloHeight = objHeight/img_height
-    if (xCenter <= 0.0) or (yCenter <= 0.0) or (yoloWidth <= 0.0) or (yoloHeight <= 0.0):
+    obj_width = float(one_point_list[1][0]) - float(one_point_list[0][0])
+    obj_height = float(one_point_list[1][1]) - float(one_point_list[0][1])
+    x_center = (float(one_point_list[0][0]) + obj_width/2)/img_width
+    y_center = (float(one_point_list[0][1]) + obj_height/2)/img_height
+    yolo_width = obj_width/img_width
+    yolo_height = obj_height/img_height
+    if (x_center <= 0.0) or (y_center <= 0.0) or (yolo_width <= 0.0) or (yolo_height <= 0.0):
         return
-    fp.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(type_str, xCenter, yCenter, yoloWidth, yoloHeight))
+    fp.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(type_str, x_center, y_center, yolo_width, yolo_height))
+    return
+
+
+def labelme2_class5_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_height)->None:
+    """ Create Yolo dataset. """
+    type_str = None
+    if shape_obj['label'] in ('person'):
+        type_str = '0'
+        obj_cnt_list[0] += 1
+    elif shape_obj['label'] in ('bicycle', 'motorbike'):
+        type_str = '1'
+        obj_cnt_list[1] += 1
+    elif shape_obj['label'] in ('tricycle'):
+        type_str = '2'
+        obj_cnt_list[2] += 1
+    elif shape_obj['label'] in ('car', 'bus', 'truck'):
+        type_str = '3'
+        obj_cnt_list[3] += 1
+    elif shape_obj['label'] in ('R', 'G', 'Y', 'B'):
+        type_str = '4'
+        obj_cnt_list[4] += 1
+    elif shape_obj['label'] in ('plate', 'plate+'):
+        return
+    else:
+        prRed('Label {} not support, return'.format(shape_obj['label']))
+        return
+    one_point_list = shape_obj['points']
+    obj_width = float(one_point_list[1][0]) - float(one_point_list[0][0])
+    obj_height = float(one_point_list[1][1]) - float(one_point_list[0][1])
+    x_center = (float(one_point_list[0][0]) + obj_width/2)/img_width
+    y_center = (float(one_point_list[0][1]) + obj_height/2)/img_height
+    yolo_width = obj_width/img_width
+    yolo_height = obj_height/img_height
+    if (x_center <= 0.0) or (y_center <= 0.0) or (yolo_width <= 0.0) or (yolo_height <= 0.0):
+        return
+    fp.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(type_str, x_center, y_center, yolo_width, yolo_height))
     return
 
 
@@ -256,51 +341,9 @@ def deal_one_image_label_files(
             for shape_obj in shapes_objs:
                 if class_num == 4:
                     labelme2_class4_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_height)
+                elif class_num == 5:
+                    labelme2_class5_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_height)
     return
-
-
-class DealDirFilesThread(threading.Thread):
-    def __init__(self, deal_dir:str, output_dir:str, output_size:List[int]):
-        threading.Thread.__init__(self)
-        self.deal_dir = deal_dir
-        self.output_dir = output_dir
-        self.output_size = output_size
-
-    def run(self):
-        sys.stdout.write('\r>> {}: Deal dir: {}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), self.deal_dir))
-        sys.stdout.flush()
-        img_list = []
-        label_list = []
-        for root, dirs, files in os.walk(self.deal_dir):
-            #print(len(files))
-            for file in sorted(files):
-                #print(os.path.splitext(file)[-1])
-                if os.path.splitext(file)[-1] == '.json':
-                    label_list.append( os.path.join(root, file) )
-                else:
-                    img_list.append( os.path.join(root, file) )
-        if len(label_list) != len(img_list):
-            sys.stdout.write('\r>> {}: File len {}:{} err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), len(label_list), len(img_list)))
-            sys.stdout.flush()
-            os._exit(2)
-        #print(img_list)
-        img_label_list = []
-        for i in range( len(img_list) ):
-            img_label = []
-            img_label.append(img_list[i])
-            img_label.append(label_list[i])
-            img_label_list.append(img_label[:])
-        random.shuffle(img_label_list)
-        #print(img_label_list)
-        for (i, img_label) in enumerate(img_label_list):
-            img_file = img_label[0]
-            label_file = img_label[1]
-            if os.path.splitext(img_file)[0] != os.path.splitext(label_file)[0]:
-                sys.stdout.write('\r>> {}: Image file {} and label file {} not fit err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), img_file, label_file))
-                sys.stdout.flush()
-                os._exit(2)
-            deal_one_image_label_files(img_file, label_file, self.output_dir, i, self.output_size)
-        return
 
 
 def deal_dir_files(
@@ -362,11 +405,24 @@ def main_func(args = None):
     random.shuffle(img_label_list)
     #print(len(img_label_list))
     #------
-    obj_cnt_list = [ 0 for _ in range(args.class_num) ]
-    deal_dir_files(args.class_num, img_label_list, args.output_dir, output_size, obj_cnt_list)
+    categories_list = None
     if args.class_num == 4:
-        print("\n%10s %10s %10s %10s %10s" %('person', 'rider', 'car', 'lg',  'total'))
-        print("%10d %10d %10d %10d %10d\n" %(obj_cnt_list[0], obj_cnt_list[1], obj_cnt_list[2], obj_cnt_list[3], sum(obj_cnt_list)))
+        categories_list = categories4_list
+    elif args.class_num == 5:
+        categories_list = categories5_list
+    else:
+        prRed('Class num {} err, return'.format(args.class_num))
+    obj_cnt_list = [ 0 for _ in range( len(categories_list) ) ]
+    deal_dir_files(args.class_num, img_label_list, args.output_dir, output_size, obj_cnt_list)
+    # print result
+    print("\n")
+    for category in categories_list:
+        print("%10s " %(category), end='')
+    print("%10s" %('total'))
+    for i in range( len(categories_list) ):
+        print("%10d " %(obj_cnt_list[i]), end='')
+    print("%10d" %(sum(obj_cnt_list)))
+    #print("\n")
     sys.stdout.write('\r>> {}: Generate yolov dataset success, save dir:{}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), args.output_dir))
     sys.stdout.flush()
     return

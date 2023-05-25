@@ -1,4 +1,11 @@
 
+# classes labels
+class4: 'person', 'rider', 'car', 'lg'
+class5: 'person', 'rider', 'tricycle', 'car', 'lg'
+class6: 'person', 'ride', 'car', 'R', 'G', 'Y'
+class11: 'person', 'bicycle', 'motorbike', 'tricycle', 'car', 'bus', 'truck', 'plate', 'R', 'G', 'Y'
+
+
 # Prepare datasets
 input_dir: Dataset which generate by labelme, it must contains a label file and a jpg file.
 ## class4
@@ -18,6 +25,17 @@ bdd format:
 ```
 $ python3 bdd_to_yolo.py --class_num=4 --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/bdd --output_dir=./output_class4
 ```
+
+## class5
+```
+$ cd david/object_detect/datasets/
+```
+labelme format:
+```
+
+$ python3 labelme_to_yolo.py --class_num=5 --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/echo_park --output_dir=./output_class5
+```
+
 
 ## class6
 ```
@@ -54,6 +72,11 @@ $ cp runs/detect/obj_det_class11/weights/best.pt yolov8n.pt
 # class4
 ```
 $ yolo task=detect mode=train model=david/object_detect/model/cuiwei.pt data=david/object_detect/data/det_data_class4.yaml epochs=300 batch=32 device=0 workers=56 resume=False name=obj_det_class4
+```
+
+# class5
+```
+$ yolo task=detect mode=train model=david/object_detect/model/yolov8n_obj_det_class4_ktti_bdd_cbd_echopark.pt data=david/object_detect/data/det_data_class5.yaml epochs=300 batch=32 device=0 workers=56 resume=False name=echopark_class5
 ```
 
 # class6

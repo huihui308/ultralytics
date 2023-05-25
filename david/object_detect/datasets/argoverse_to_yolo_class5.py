@@ -267,7 +267,7 @@ def main_func(args = None):
     print("\n")
     for category in categories_list:
         print("%10s " %(category), end='')
-    print("%10s" %('sum'))
+    print("%10s" %('total'))
     for i in range( len(categories_list) ):
         print("%10d " %(obj_cnt_list[i]), end='')
     print("%10d" %(sum(obj_cnt_list)))
