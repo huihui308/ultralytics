@@ -34,7 +34,7 @@ $ docker run -t -i --gpus "device=0,1" -v /home/david/dataset:/home/david/datase
 or all gpu
 $ docker run -t -i --gpus all -v /home/david/dataset:/home/david/dataset 8edad533cbf6 bash
 
-$ docker run -itd --gpus all --name davidv8 -p 5005:22 -e NVIDIA_DRIVER_CAPABILITIES=compute,utility -e NVIDIA_VISIBLE_DEVICES=all 2ddbed870f64
+$ docker run -itd --gpus all --name davidv8 -p 5005:22 -e NVIDIA_DRIVER_CAPABILITIES=compute,utility -e NVIDIA_VISIBLE_DEVICES=all -v /home/david/dataset:/home/david/dataset --ipc=host 2ddbed870f64
 ```
 
 
