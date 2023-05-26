@@ -336,7 +336,8 @@ def deal_one_image_label_files(
     #------
     with open(os.path.join(save_label_dir, save_file_name + ".txt"), "w") as fp:
         with open(label_file, 'r') as load_f:
-            json_data = json.load(load_f, encoding='utf-8')
+            json_data = json.load(load_f)
+            #json_data = json.load(load_f, encoding='utf-8')
             shapes_objs = json_data['shapes']
             for shape_obj in shapes_objs:
                 if class_num == 4:

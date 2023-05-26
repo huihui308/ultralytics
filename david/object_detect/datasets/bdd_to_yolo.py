@@ -222,7 +222,8 @@ def deal_one_image_label_files(
     #------
     with open(os.path.join(save_label_dir, save_file_name + ".txt"), "w") as fp:
         with open(label_file, 'r') as load_f:
-            jsonData = json.load(load_f, encoding='utf-8')
+            jsonData = json.load(load_f)
+            #jsonData = json.load(load_f, encoding='utf-8')
             frames = jsonData['frames']
             for frame in frames:
                 objects = frame['objects']

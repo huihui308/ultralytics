@@ -90,8 +90,13 @@ $ yolo task=detect mode=train model=david/object_detect/model/cuiwei.pt data=dav
 ```
 
 # class5
+Signal gpu:
 ```
 $ yolo task=detect mode=train model=david/object_detect/model/yolov8n_obj_det_class4_ktti_bdd_cbd_echopark.pt data=david/object_detect/data/det_data_class5.yaml epochs=300 batch=32 device=0 workers=56 resume=False name=echopark_class5
+```
+Multiple gpu:
+```
+$ yolo task=detect mode=train model=david/object_detect/model/yolov8n_obj_det_class4_ktti_bdd_cbd_echopark.pt data=david/object_detect/data/det_data_class5.yaml epochs=300 batch=128 device=0,1 workers=56 resume=False name=all_class5
 ```
 
 # class6

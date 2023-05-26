@@ -206,7 +206,8 @@ def deal_dir_files(
     categories_dict = {}
     img_id_dict = {}
     with open(json_file, "r") as fp:
-        json_data = json.load(fp, encoding='utf-8')
+        json_data = json.load(fp)
+        #json_data = json.load(fp, encoding='utf-8')
         for one_category in json_data['categories']:
             categories_dict[one_category['id']] = one_category['name']
         print(categories_dict)
