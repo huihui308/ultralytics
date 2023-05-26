@@ -412,6 +412,7 @@ def main_func(args = None):
         categories_list = categories5_list
     else:
         prRed('Class num {} err, return'.format(args.class_num))
+        return
     obj_cnt_list = [ 0 for _ in range( len(categories_list) ) ]
     deal_dir_files(args.class_num, img_label_list, args.output_dir, output_size, obj_cnt_list)
     # print result

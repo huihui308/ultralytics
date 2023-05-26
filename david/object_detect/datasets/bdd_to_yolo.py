@@ -40,6 +40,8 @@ from typing import List
 import os, sys, math, shutil, random, datetime, signal, argparse
 
 
+categories4_list = ['person', 'rider', 'car', 'lg']
+categories5_list = ['person', 'rider', 'tricycle', 'car', 'lg']
 TQDM_BAR_FORMAT = '{l_bar}{bar:40}| {n_fmt}/{total_fmt} {elapsed}'
 
 
@@ -81,7 +83,7 @@ def parse_args(args = None):
         "--class_num",
         type = int,
         required = True,
-        help = "Class num. 4:{'person':'0', 'rider':'1', 'car':'2', 'lg':'3'}, 6:{'person':'0', 'rider':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
+        help = "Class num. 4:{'person':'0', 'rider':'1', 'car':'2', 'lg':'3'}, 5:{'person':'0', 'rider':'1', 'tricycle':'2', 'car':'3', 'lg':'4'}, 6:{'person':'0', 'rider':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
     )
     parser.add_argument(
         "--target_width",
@@ -130,19 +132,56 @@ def bdd2_class4_yolo_data(fp, lop_obj, obj_cnt_list, img_width, img_height)->Non
     elif lop_obj['category'] in ('traffic light'):
         type_str = '3'
         obj_cnt_list[3] += 1
+    elif lop_obj['category'] in ('traffic sign', 'train'):
+        return
     else:
+        prRed('Category {} not support, return'.format(lop_obj['category']))
         return
     xy = lop_obj['box2d']
     if (xy['x1'] >= xy['x2']) or (xy['y1'] >= xy['y2']):
         return
     #print(xy['x1'], xy['y1'], xy['x2'], xy['y2'], categorys.index(lop_obj['category']))
-    objWidth = xy['x2'] - xy['x1']
-    objHeight = xy['y2'] - xy['y1']
-    xCenter = (xy['x1'] + objWidth/2)/img_width
-    yCenter = (xy['y1'] + objHeight/2)/img_height
-    yoloWidth = objWidth/img_width
-    yoloHeight = objHeight/img_height
-    fp.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(type_str, xCenter, yCenter, yoloWidth, yoloHeight))
+    obj_width = xy['x2'] - xy['x1']
+    obj_height = xy['y2'] - xy['y1']
+    x_center = (xy['x1'] + obj_width/2)/img_width
+    y_center = (xy['y1'] + obj_height/2)/img_height
+    yolo_width = obj_width/img_width
+    yolo_height = obj_height/img_height
+    fp.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(type_str, x_center, y_center, yolo_width, yolo_height))
+    return
+
+
+def bdd2_class5_yolo_data(fp, lop_obj, obj_cnt_list, img_width, img_height)->None:
+    #categorys = ['car', 'bus', 'person', 'bike', 'truck', 'motor', 'train', 'rider', 'traffic sign', 'traffic light']
+    type_str = None
+    if lop_obj['category'] in ('person'):
+        type_str = '0'
+        obj_cnt_list[0] += 1
+    elif lop_obj['category'] in ('bike', 'motor', 'rider'):
+        type_str = '1'
+        obj_cnt_list[1] += 1
+    elif lop_obj['category'] in ('car', 'bus', 'truck'):
+        type_str = '3'
+        obj_cnt_list[3] += 1
+    elif lop_obj['category'] in ('traffic light'):
+        type_str = '4'
+        obj_cnt_list[4] += 1
+    elif lop_obj['category'] in ('traffic sign', 'train'):
+        return
+    else:
+        prRed('Category {} not support, return'.format(lop_obj['category']))
+        return
+    xy = lop_obj['box2d']
+    if (xy['x1'] >= xy['x2']) or (xy['y1'] >= xy['y2']):
+        return
+    #print(xy['x1'], xy['y1'], xy['x2'], xy['y2'], categorys.index(lop_obj['category']))
+    obj_width = xy['x2'] - xy['x1']
+    obj_height = xy['y2'] - xy['y1']
+    x_center = (xy['x1'] + obj_width/2)/img_width
+    y_center = (xy['y1'] + obj_height/2)/img_height
+    yolo_width = obj_width/img_width
+    yolo_height = obj_height/img_height
+    fp.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(type_str, x_center, y_center, yolo_width, yolo_height))
     return
 
 
@@ -192,6 +231,8 @@ def deal_one_image_label_files(
                         continue
                     if class_num == 4:
                         bdd2_class4_yolo_data(fp, lop_obj, obj_cnt_list, img_width, img_height)
+                    elif class_num == 5:
+                        bdd2_class5_yolo_data(fp, lop_obj, obj_cnt_list, img_width, img_height)
     return
 
 
@@ -255,11 +296,25 @@ def main_func(args = None):
     random.shuffle(img_label_list)
     #print(len(img_label_list))
     #------
-    obj_cnt_list = [ 0 for _ in range(args.class_num) ]
-    deal_dir_files(args.class_num, img_label_list, args.output_dir, output_size, obj_cnt_list)
+    categories_list = None
     if args.class_num == 4:
-        print("\n%10s %10s %10s %10s %10s" %('person', 'rider', 'car', 'lg',  'total'))
-        print("%10d %10d %10d %10d %10d\n" %(obj_cnt_list[0], obj_cnt_list[1], obj_cnt_list[2], obj_cnt_list[3], sum(obj_cnt_list)))
+        categories_list = categories4_list
+    elif args.class_num == 5:
+        categories_list = categories5_list
+    else:
+        prRed('Class num {} err, return'.format(args.class_num))
+        return
+    obj_cnt_list = [ 0 for _ in range( len(categories_list) ) ]
+    deal_dir_files(args.class_num, img_label_list, args.output_dir, output_size, obj_cnt_list)
+    # print result
+    print("\n")
+    for category in categories_list:
+        print("%10s " %(category), end='')
+    print("%10s" %('total'))
+    for i in range( len(categories_list) ):
+        print("%10d " %(obj_cnt_list[i]), end='')
+    print("%10d" %(sum(obj_cnt_list)))
+    #print("\n")
     sys.stdout.write('\r>> {}: Generate yolov dataset success, save dir:{}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), args.output_dir))
     sys.stdout.flush()
     return

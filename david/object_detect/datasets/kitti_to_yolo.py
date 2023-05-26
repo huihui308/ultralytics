@@ -40,6 +40,8 @@ from typing import List
 import os, sys, math, shutil, random, datetime, signal, argparse
 
 
+categories4_list = ['person', 'rider', 'car', 'lg']
+categories5_list = ['person', 'rider', 'tricycle', 'car', 'lg']
 TQDM_BAR_FORMAT = '{l_bar}{bar:40}| {n_fmt}/{total_fmt} {elapsed}'
 
 
@@ -81,7 +83,7 @@ def parse_args(args = None):
         "--class_num",
         type = int,
         required = True,
-        help = "Class num. 4:{'person':'0', 'rider':'1', 'car':'2', 'lg':'3'}, 6:{'person':'0', 'rider':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
+        help = "Class num. 4:{'person':'0', 'rider':'1', 'car':'2', 'lg':'3'}, 5:{'person':'0', 'rider':'1', 'tricycle':'2', 'car':'3', 'lg':'4'}, 6:{'person':'0', 'rider':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
     )
     parser.add_argument(
         "--target_width",
@@ -190,23 +192,55 @@ def kitti2_class4_yolo_data(fp, one_line, obj_cnt_list, img_width, img_height)->
     if kitti_list[0] in ('Pedestrian', 'Person_sitting'):
         type_str = '0'
         obj_cnt_list[0] += 1
-    elif kitti_list[0] == 'Cyclist':
+    elif kitti_list[0] in ('Cyclist'):
         type_str = '1'
         obj_cnt_list[1] += 1
     elif kitti_list[0] in ('Car', 'Van', 'Truck', 'Tram'):
         type_str = '2'
         obj_cnt_list[2] += 1
+    elif kitti_list[0] in ('DontCare', 'Misc'):
+        return
     else:
+        prRed('Type {} not support, return'.format(kitti_list[0]))
         return
-    objWidth = float(kitti_list[6]) - float(kitti_list[4])
-    objHeight = float(kitti_list[7]) - float(kitti_list[5])
-    xCenter = (float(kitti_list[4]) + objWidth/2)/img_width
-    yCenter = (float(kitti_list[5]) + objHeight/2)/img_height
-    yoloWidth = objWidth/img_width
-    yoloHeight = objHeight/img_height
-    if (xCenter <= 0.0) or (yCenter <= 0.0) or (yoloWidth <= 0.0) or (yoloHeight <= 0.0):
+    obj_width = float(kitti_list[6]) - float(kitti_list[4])
+    obj_height = float(kitti_list[7]) - float(kitti_list[5])
+    x_center = (float(kitti_list[4]) + obj_width/2)/img_width
+    y_center = (float(kitti_list[5]) + obj_height/2)/img_height
+    yolo_width = obj_width/img_width
+    yolo_height = obj_height/img_height
+    if (x_center <= 0.0) or (y_center <= 0.0) or (yolo_width <= 0.0) or (yolo_height <= 0.0):
         return
-    fp.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(type_str, xCenter, yCenter, yoloWidth, yoloHeight))
+    fp.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(type_str, x_center, y_center, yolo_width, yolo_height))
+    return
+
+
+def kitti2_class5_yolo_data(fp, one_line, obj_cnt_list, img_width, img_height)->None:
+    type_str = None
+    kitti_list = one_line.split(' ')
+    if kitti_list[0] in ('Pedestrian', 'Person_sitting'):
+        type_str = '0'
+        obj_cnt_list[0] += 1
+    elif kitti_list[0] in ('Cyclist'):
+        type_str = '1'
+        obj_cnt_list[1] += 1
+    elif kitti_list[0] in ('Car', 'Van', 'Truck', 'Tram'):
+        type_str = '3'
+        obj_cnt_list[3] += 1
+    elif kitti_list[0] in ('DontCare', 'Misc'):
+        return
+    else:
+        prRed('Type {} not support, return'.format(kitti_list[0]))
+        return
+    obj_width = float(kitti_list[6]) - float(kitti_list[4])
+    obj_height = float(kitti_list[7]) - float(kitti_list[5])
+    x_center = (float(kitti_list[4]) + obj_width/2)/img_width
+    y_center = (float(kitti_list[5]) + obj_height/2)/img_height
+    yolo_width = obj_width/img_width
+    yolo_height = obj_height/img_height
+    if (x_center <= 0.0) or (y_center <= 0.0) or (yolo_width <= 0.0) or (yolo_height <= 0.0):
+        return
+    fp.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(type_str, x_center, y_center, yolo_width, yolo_height))
     return
 
 
@@ -249,6 +283,8 @@ def deal_one_image_label_files(
             #print(one_line)
             if class_num == 4:
                 kitti2_class4_yolo_data(fp, one_line, obj_cnt_list, img_width, img_height)
+            elif class_num == 5:
+                kitti2_class5_yolo_data(fp, one_line, obj_cnt_list, img_width, img_height)
     return
 
 
@@ -311,11 +347,25 @@ def main_func(args = None):
     random.shuffle(img_label_list)
     #print(len(img_label_list))
     #------
-    obj_cnt_list = [ 0 for _ in range(args.class_num) ]
-    deal_dir_files(args.class_num, img_label_list, args.output_dir, output_size, obj_cnt_list)
+    categories_list = None
     if args.class_num == 4:
-        print("\n%10s %10s %10s %10s %10s" %('person', 'rider', 'car', 'lg',  'total'))
-        print("%10d %10d %10d %10d %10d\n" %(obj_cnt_list[0], obj_cnt_list[1], obj_cnt_list[2], obj_cnt_list[3], sum(obj_cnt_list)))
+        categories_list = categories4_list
+    elif args.class_num == 5:
+        categories_list = categories5_list
+    else:
+        prRed('Class num {} err, return'.format(args.class_num))
+        return
+    obj_cnt_list = [ 0 for _ in range( len(categories_list) ) ]
+    deal_dir_files(args.class_num, img_label_list, args.output_dir, output_size, obj_cnt_list)
+    # print result
+    print("\n")
+    for category in categories_list:
+        print("%10s " %(category), end='')
+    print("%10s" %('total'))
+    for i in range( len(categories_list) ):
+        print("%10d " %(obj_cnt_list[i]), end='')
+    print("%10d" %(sum(obj_cnt_list)))
+    #print("\n")
     sys.stdout.write('\r>> {}: Generate yolov dataset success, save dir:{}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), args.output_dir))
     sys.stdout.flush()
     return

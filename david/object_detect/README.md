@@ -32,8 +32,23 @@ $ cd david/object_detect/datasets/
 ```
 labelme format:
 ```
-
-$ python3 labelme_to_yolo.py --class_num=5 --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/echo_park --output_dir=./output_class5
+$ python3 labelme_to_yolo.py --class_num=5 --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/echo_park --output_dir=/home/david/dataset/detect/yolo/class5
+```
+Argoverse-1.1 format:
+```
+$ python3 argoverse_to_yolo_class5.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/Argoverse-1.1 --output_dir=/home/david/dataset/detect/yolo/class5
+```
+ktti format
+```
+$ python3 kitti_to_yolo.py --class_num=5 --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/kitti --output_dir=/home/david/dataset/detect/yolo/class5
+```
+bdd format:
+```
+$ python3 bdd_to_yolo.py --class_num=5 --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/bdd --output_dir=/home/david/dataset/detect/yolo/class5
+```
+UA-DETRAC format:
+```
+$ python3 UA-DETRAC_to_yolo_class5.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/UA-DETRAC --output_dir=/home/david/dataset/detect/yolo/class5
 ```
 
 
