@@ -22,6 +22,8 @@
 # DEALINGS IN THE SOFTWARE.
 #
 # python3 labelme_to_yolo.py --class_num=4 --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/CBD --output_dir=./output_class4
+# 
+# python3 labelme_to_yolo.py --input_dir=/home/david/dataset/detect/CBD --show_statistic=True
 #
 ################################################################################
 
@@ -76,26 +78,32 @@ def parse_args(args = None):
     parser.add_argument(
         "--output_dir",
         type = str,
-        required = True,
+        required = False,
         help = "Ouput directory to resized images/labels."
     )
     parser.add_argument(
         "--class_num",
         type = int,
-        required = True,
+        required = False,
         help = "Class num. 4:{'person':'0', 'rider':'1', 'car':'2', 'lg':'3'}, 5:{'person':'0', 'rider':'1', 'tricycle':'2', 'car':'3', 'lg':'4'}, 6:{'person':'0', 'rider':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
     )
     parser.add_argument(
         "--target_width",
         type = int,
-        required = True,
+        required = False,
         help = "Target width for resized images/labels."
     )
     parser.add_argument(
         "--target_height",
         type = int,
-        required = True,
+        required = False,
         help = "Target height for resized images/labels."
+    )
+    parser.add_argument(
+        "--show_statistic",
+        type = bool,
+        required = False,
+        help = "Statistic labels count."
     )
     return parser.parse_args(args)
 
@@ -374,14 +382,39 @@ def deal_dir_files(
     return
 
 
+def show_statistic_info(input_dir:str, labels_list)->None:
+    prYellow('\nShow directory \'{}\' statistic info\n'.format(input_dir))
+    labels_cnt_dict = {}
+    pbar = enumerate(labels_list)
+    pbar = tqdm(pbar, total=len(labels_list), desc="Processing", colour='blue', bar_format=TQDM_BAR_FORMAT)
+    for (i, label_file) in pbar:
+        with open(label_file, 'r') as load_f:
+            json_data = json.load(load_f)
+            #json_data = json.load(load_f, encoding='utf-8')
+            shapes_objs = json_data['shapes']
+            for shape_obj in shapes_objs:
+                if shape_obj['label'] in labels_cnt_dict:
+                    labels_cnt_dict[ shape_obj['label'] ] += 1
+                else:
+                    labels_cnt_dict[ shape_obj['label'] ] = 0
+    #print( len(labels_cnt_dict) )
+    # print result
+    #print("\n")
+    for label in labels_cnt_dict:
+        print("%10s " %(label), end='')
+    print("%10s" %('total'))
+    total_cnt = 0
+    for label in labels_cnt_dict:
+        print("%10d " %(labels_cnt_dict[ label ]), end='')
+        total_cnt += labels_cnt_dict[ label ]
+    print("%10d" %(total_cnt))
+    return
+
+
 def main_func(args = None):
     """ Main function for data preparation. """
     signal.signal(signal.SIGINT, term_sig_handler)
     args = parse_args(args)
-    output_size = (args.target_width, args.target_height)
-    args.output_dir = os.path.abspath(args.output_dir)
-    prYellow('output_dir: {}'.format(args.output_dir))
-    make_ouput_dir(args.output_dir)
     #------
     imgs_list = []
     labels_list = []
@@ -405,6 +438,15 @@ def main_func(args = None):
         img_label_list.append(img_label[:])
     random.shuffle(img_label_list)
     #print(len(img_label_list))
+    #------
+    if args.show_statistic:
+        show_statistic_info(args.input_dir, labels_list)
+        return
+    #------
+    output_size = (args.target_width, args.target_height)
+    args.output_dir = os.path.abspath(args.output_dir)
+    prYellow('output_dir: {}'.format(args.output_dir))
+    make_ouput_dir(args.output_dir)
     #------
     categories_list = None
     if args.class_num == 4:
