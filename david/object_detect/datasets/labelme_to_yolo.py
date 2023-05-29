@@ -21,7 +21,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 #
-# python3 labelme_to_yolo.py --class_num=4 --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/CBD --output_dir=./output_class4
+# python3 labelme_to_yolo.py --class_num=5 --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/echo_park --loop_cnt=1 --output_dir=/home/david/dataset/detect/yolo/echo_park_class5X1
 # 
 # python3 labelme_to_yolo.py --input_dir=/home/david/dataset/detect/CBD --show_statistic=True
 #
@@ -104,6 +104,13 @@ def parse_args(args = None):
         type = bool,
         required = False,
         help = "Statistic labels count."
+    )
+    parser.add_argument(
+        "--loop_cnt",
+        type = int,
+        required = False,
+        default = 1,
+        help = "Directory loop count."
     )
     return parser.parse_args(args)
 
@@ -356,6 +363,7 @@ def deal_one_image_label_files(
 
 
 def deal_dir_files(
+        loop_cnt:int,
         class_num, 
         img_label_list:str, 
         output_dir:str, 
@@ -365,18 +373,20 @@ def deal_dir_files(
     #print(img_label_list)
     train_fp = open(output_dir + "/train.txt", "a+")
     val_fp = open(output_dir + "/val.txt", "a+")
-    pbar = enumerate(img_label_list)
-    pbar = tqdm(pbar, total=len(img_label_list), desc="Processing", colour='blue', bar_format=TQDM_BAR_FORMAT)
-    for (i, img_label) in pbar:
-        img_file = img_label[0]
-        label_file = img_label[1]
-        img_file_name, _ = os.path.splitext( os.path.split(img_file)[1] )
-        label_file_name, _ = os.path.splitext( os.path.split(label_file)[1] )
-        if img_file_name != label_file_name:
-            sys.stdout.write('\r>> {}: Image file {} and label file {} not fit err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), img_file, label_file))
-            sys.stdout.flush()
-            os._exit(2)
-        deal_one_image_label_files(class_num, train_fp, val_fp, img_file, label_file, output_dir, i, output_size, obj_cnt_list)
+    for one_lop in range(loop_cnt):
+        prYellow('Loop count{}'.format(one_lop))
+        pbar = enumerate(img_label_list)
+        pbar = tqdm(pbar, total=len(img_label_list), desc="Processing", colour='blue', bar_format=TQDM_BAR_FORMAT)
+        for (i, img_label) in pbar:
+            img_file = img_label[0]
+            label_file = img_label[1]
+            img_file_name, _ = os.path.splitext( os.path.split(img_file)[1] )
+            label_file_name, _ = os.path.splitext( os.path.split(label_file)[1] )
+            if img_file_name != label_file_name:
+                sys.stdout.write('\r>> {}: Image file {} and label file {} not fit err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), img_file, label_file))
+                sys.stdout.flush()
+                os._exit(2)
+            deal_one_image_label_files(class_num, train_fp, val_fp, img_file, label_file, output_dir, i, output_size, obj_cnt_list)
     train_fp.close()
     val_fp.close()
     return
@@ -443,6 +453,9 @@ def main_func(args = None):
         show_statistic_info(args.input_dir, labels_list)
         return
     #------
+    if (args.output_dir is None) or (args.class_num is None):
+        prRed('Not input output_dir or class_num parameter, return')
+        return
     output_size = (args.target_width, args.target_height)
     args.output_dir = os.path.abspath(args.output_dir)
     prYellow('output_dir: {}'.format(args.output_dir))
@@ -457,7 +470,7 @@ def main_func(args = None):
         prRed('Class num {} err, return'.format(args.class_num))
         return
     obj_cnt_list = [ 0 for _ in range( len(categories_list) ) ]
-    deal_dir_files(args.class_num, img_label_list, args.output_dir, output_size, obj_cnt_list)
+    deal_dir_files(args.loop_cnt, args.class_num, img_label_list, args.output_dir, output_size, obj_cnt_list)
     # print result
     print("\n")
     for category in categories_list:
