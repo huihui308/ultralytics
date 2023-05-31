@@ -132,7 +132,7 @@ def uadetrac2_class_yolo_data(fp, one_target, obj_cnt_list, img_width, img_heigh
         obj_cnt_list[3] += 1
     else:
         #prRed('vehicle_type \'{}\' err'.format(vehicle_type))
-        continue
+        return
     x_center = (obj_left + obj_width/2)/img_width
     y_center = (obj_top + obj_height/2)/img_height
     yolo_width = obj_width/img_width
