@@ -40,7 +40,8 @@ from xml.dom.minidom import parse
 import os, sys, math, shutil, random, datetime, signal, argparse
 
 
-categories_list = ['person', 'rider', 'tricycle', 'car', 'lg']
+categories4_list = ['person', 'rider', 'tricycle', 'car']
+categories5_list = ['person', 'rider', 'tricycle', 'car', 'lg']
 TQDM_BAR_FORMAT = '{l_bar}{bar:40}| {n_fmt}/{total_fmt} {elapsed}'
 
 
@@ -78,14 +79,12 @@ def parse_input_args(args = None):
         required = True,
         help = "Ouput directory to resized images/labels."
     )
-    """
     parser.add_argument(
         "--class_num",
         type = int,
         required = True,
-        help = "Class num. 4:{'person':'0', 'rider':'1', 'car':'2', 'lg':'3'}, 5:{'person':'0', 'rider':'1', 'tricycle':'2', 'car':'3', 'lg':'4'}, 6:{'person':'0', 'rider':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
+        help = "Class num. 4:{'person':'0', 'rider':'1', 'tricycle':'2', 'car':'3'}, 5:{'person':'0', 'rider':'1', 'tricycle':'2', 'car':'3', 'lg':'4'}, 6:{'person':'0', 'rider':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
     )
-    """
     parser.add_argument(
         "--target_width",
         type = int,
@@ -112,13 +111,41 @@ def make_ouput_dir(output_dir:str)->None:
             #shutil.rmtree(first_dir)
             os.makedirs(first_dir)
         for lop_dir1 in ("images", "labels"):
-            secondDir = os.path.join(first_dir, lop_dir1)
-            if not os.path.exists(secondDir):
-                os.makedirs(secondDir)
+            second_dir = os.path.join(first_dir, lop_dir1)
+            if not os.path.exists(second_dir):
+                os.makedirs(second_dir)
+    return
+
+
+def uadetrac2_class_yolo_data(fp, one_target, obj_cnt_list, img_width, img_height)->None:
+    type_str = None
+    box_attr = one_target.getElementsByTagName('box')[0]
+    obj_left = float( box_attr.getAttribute('left') )
+    obj_top = float( box_attr.getAttribute('top') )
+    obj_width = float( box_attr.getAttribute('width') )
+    obj_height = float( box_attr.getAttribute('height') )
+    type_attr = one_target.getElementsByTagName('attribute')[0]
+    vehicle_type = type_attr.getAttribute('vehicle_type')
+    #print(left, top, width, height, vehicle_type)
+    if vehicle_type in ('car', 'van', 'bus'):
+        type_str = '3'
+        obj_cnt_list[3] += 1
+    else:
+        #prRed('vehicle_type \'{}\' err'.format(vehicle_type))
+        continue
+    x_center = (obj_left + obj_width/2)/img_width
+    y_center = (obj_top + obj_height/2)/img_height
+    yolo_width = obj_width/img_width
+    yolo_height = obj_height/img_height
+    if (x_center <= 0.0) or (y_center <= 0.0) or (yolo_width <= 0.0) or (yolo_height <= 0.0):
+        prRed('Yolo pos {} {} {} {} err, return'.format(x_center, y_center, yolo_width, yolo_height))
+        return
+    fp.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(type_str, x_center, y_center, yolo_width, yolo_height))
     return
 
 
 def deal_one_image_label_files(
+        class_num, 
         train_fp, 
         val_fp, 
         img_file:str, 
@@ -155,29 +182,18 @@ def deal_one_image_label_files(
     #------
     with open(os.path.join(save_label_dir, save_file_name + ".txt"), "w") as fp:
         for one_target in targets:
-            box_attr = one_target.getElementsByTagName('box')[0]
-            obj_left = float( box_attr.getAttribute('left') )
-            obj_top = float( box_attr.getAttribute('top') )
-            obj_width = float( box_attr.getAttribute('width') )
-            obj_height = float( box_attr.getAttribute('height') )
-            type_attr = one_target.getElementsByTagName('attribute')[0]
-            vehicle_type = type_attr.getAttribute('vehicle_type')
-            #print(left, top, width, height, vehicle_type)
-            if vehicle_type in ('car', 'van', 'bus'):
-                type_str = '3'
-                obj_cnt_list[3] += 1                
-            else:
-                #prRed('vehicle_type \'{}\' err'.format(vehicle_type))
-                continue
-            x_center = (obj_left + obj_width/2)/img_width
-            y_center = (obj_top + obj_height/2)/img_height
-            yolo_width = obj_width/img_width
-            yolo_height = obj_height/img_height
-            fp.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(type_str, x_center, y_center, yolo_width, yolo_height))
+            if (class_num == 4) or (class_num == 5):
+                uadetrac2_class_yolo_data(fp, one_target, obj_cnt_list, img_width, img_height)
     return
 
 
-def deal_dir_files(deal_dir:str, output_dir:str, output_size:List[int], obj_cnt_list)->None:
+def deal_dir_files(
+        class_num, 
+        deal_dir:str, 
+        output_dir:str, 
+        output_size:List[int], 
+        obj_cnt_list
+)->None:
     train_fp = open(output_dir + "/train.txt", "a+")
     val_fp = open(output_dir + "/val.txt", "a+")
     #------
@@ -212,7 +228,7 @@ def deal_dir_files(deal_dir:str, output_dir:str, output_size:List[int], obj_cnt_
                     prRed('Image dir {} not exist'.format(img_file))
                 #print(img_file)
                 targets = one_frame.getElementsByTagName('target')
-                deal_one_image_label_files(train_fp, val_fp, img_file, targets, output_dir, i, output_size, obj_cnt_list)
+                deal_one_image_label_files(class_num, train_fp, val_fp, img_file, targets, output_dir, i, output_size, obj_cnt_list)
     train_fp.close()
     val_fp.close()
     return
@@ -226,10 +242,19 @@ def main_func(args = None):
     args.output_dir = os.path.abspath(args.output_dir)
     prYellow('output_dir: {}'.format(args.output_dir))
     make_ouput_dir(args.output_dir)
+    #------
+    categories_list = None
+    if args.class_num == 4:
+        categories_list = categories4_list
+    elif args.class_num == 5:
+        categories_list = categories5_list
+    else:
+        prRed('Class num {} err, return'.format(args.class_num))
+        return
     obj_cnt_list = [0 for _ in range( len(categories_list) )]
     deal_dir_list = ['train', 'test']
     for lop_dir in deal_dir_list:
-        deal_dir_files(os.path.join(args.input_dir, lop_dir), args.output_dir, output_size, obj_cnt_list)
+        deal_dir_files(args.class_num, os.path.join(args.input_dir, lop_dir), args.output_dir, output_size, obj_cnt_list)
     print("\n")
     for category in categories_list:
         print("%10s " %(category), end='')

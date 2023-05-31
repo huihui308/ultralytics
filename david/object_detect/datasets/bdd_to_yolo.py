@@ -144,6 +144,9 @@ def bdd2_class4_yolo_data(fp, lop_obj, obj_cnt_list, img_width, img_height)->Non
     y_center = (xy['y1'] + obj_height/2)/img_height
     yolo_width = obj_width/img_width
     yolo_height = obj_height/img_height
+    if (x_center <= 0.0) or (y_center <= 0.0) or (yolo_width <= 0.0) or (yolo_height <= 0.0):
+        prRed('Yolo pos {} {} {} {} err, return'.format(x_center, y_center, yolo_width, yolo_height))
+        return
     fp.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(type_str, x_center, y_center, yolo_width, yolo_height))
     return
 
@@ -178,6 +181,9 @@ def bdd2_class5_yolo_data(fp, lop_obj, obj_cnt_list, img_width, img_height)->Non
     y_center = (xy['y1'] + obj_height/2)/img_height
     yolo_width = obj_width/img_width
     yolo_height = obj_height/img_height
+    if (x_center <= 0.0) or (y_center <= 0.0) or (yolo_width <= 0.0) or (yolo_height <= 0.0):
+        prRed('Yolo pos {} {} {} {} err, return'.format(x_center, y_center, yolo_width, yolo_height))
+        return
     fp.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(type_str, x_center, y_center, yolo_width, yolo_height))
     return
 

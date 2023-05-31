@@ -40,7 +40,7 @@ from typing import List
 import os, sys, math, shutil, random, datetime, signal, argparse
 
 
-categories4_list = ['person', 'rider', 'car', 'lg']
+categories4_list = ['person', 'rider', 'tricycle', 'car']
 categories5_list = ['person', 'rider', 'tricycle', 'car', 'lg']
 TQDM_BAR_FORMAT = '{l_bar}{bar:40}| {n_fmt}/{total_fmt} {elapsed}'
 
@@ -83,7 +83,7 @@ def parse_args(args = None):
         "--class_num",
         type = int,
         required = True,
-        help = "Class num. 4:{'person':'0', 'rider':'1', 'car':'2', 'lg':'3'}, 5:{'person':'0', 'rider':'1', 'tricycle':'2', 'car':'3', 'lg':'4'}, 6:{'person':'0', 'rider':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
+        help = "Class num. 4:{'person':'0', 'rider':'1', 'tricycle':'2', 'car':'3'}, 5:{'person':'0', 'rider':'1', 'tricycle':'2', 'car':'3', 'lg':'4'}, 6:{'person':'0', 'rider':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
     )
     parser.add_argument(
         "--target_width",
@@ -105,15 +105,15 @@ def make_ouput_dir(output_dir:str)->None:
     #    shutil.rmtree(output_dir)
     if not os.path.exists(output_dir):
         os.makedirs(output_dir)
-    for lopDir0 in ("train", "val"):
-        firstDir = os.path.join(output_dir, lopDir0)
-        if not os.path.exists(firstDir):
-            #shutil.rmtree(firstDir)
-            os.makedirs(firstDir)
-        for lopDir1 in ("images", "labels"):
-            secondDir = os.path.join(firstDir, lopDir1)
-            if not os.path.exists(secondDir):
-                os.makedirs(secondDir)
+    for lop_dir0 in ("train", "val"):
+        first_dir = os.path.join(output_dir, lop_dir0)
+        if not os.path.exists(first_dir):
+            #shutil.rmtree(first_dir)
+            os.makedirs(first_dir)
+        for lop_dir1 in ("images", "labels"):
+            second_dir = os.path.join(first_dir, lop_dir1)
+            if not os.path.exists(second_dir):
+                os.makedirs(second_dir)
     return
 
 
@@ -151,7 +151,7 @@ def GenerateKITTIDataset(img_file:str, label_dict_list, output_dir:str, deal_cnt
 
     dir_name, full_file_name = os.path.split(img_file)
     sub_dir_name = dir_name.split('/')[-1]
-    save_file_name = sub_dir_name + "_" + str(random.randint(10000000, 99999999)).zfill(8)
+    save_file_name = sub_dir_name + "_" + str(random.randint(0, 99999999)).zfill(8)
     #print( save_file_name )
     
     # resize labels
@@ -196,8 +196,8 @@ def kitti2_class4_yolo_data(fp, one_line, obj_cnt_list, img_width, img_height)->
         type_str = '1'
         obj_cnt_list[1] += 1
     elif kitti_list[0] in ('Car', 'Van', 'Truck', 'Tram'):
-        type_str = '2'
-        obj_cnt_list[2] += 1
+        type_str = '3'
+        obj_cnt_list[3] += 1
     elif kitti_list[0] in ('DontCare', 'Misc'):
         return
     else:
@@ -210,6 +210,7 @@ def kitti2_class4_yolo_data(fp, one_line, obj_cnt_list, img_width, img_height)->
     yolo_width = obj_width/img_width
     yolo_height = obj_height/img_height
     if (x_center <= 0.0) or (y_center <= 0.0) or (yolo_width <= 0.0) or (yolo_height <= 0.0):
+        prRed('Yolo pos {} {} {} {} err, return'.format(x_center, y_center, yolo_width, yolo_height))
         return
     fp.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(type_str, x_center, y_center, yolo_width, yolo_height))
     return
@@ -239,6 +240,7 @@ def kitti2_class5_yolo_data(fp, one_line, obj_cnt_list, img_width, img_height)->
     yolo_width = obj_width/img_width
     yolo_height = obj_height/img_height
     if (x_center <= 0.0) or (y_center <= 0.0) or (yolo_width <= 0.0) or (yolo_height <= 0.0):
+        prRed('Yolo pos {} {} {} {} err, return'.format(x_center, y_center, yolo_width, yolo_height))
         return
     fp.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(type_str, x_center, y_center, yolo_width, yolo_height))
     return
@@ -269,7 +271,7 @@ def deal_one_image_label_files(
     dir_name, full_file_name = os.path.split(img_file)
     sub_dir_name0, sub_dir_name1 = dir_name.split('/')[-2], dir_name.split('/')[-1]
     #print(sub_dir_name0, sub_dir_name1)
-    save_file_name = sub_dir_name0 + "_" + sub_dir_name1 + "_" + os.path.splitext(full_file_name)[0] + "_" + str(random.randint(100000000000, 999999999999)).zfill(12)
+    save_file_name = sub_dir_name0 + "_" + sub_dir_name1 + "_" + os.path.splitext(full_file_name)[0] + "_" + str(random.randint(0, 999999999999)).zfill(12)
     img = cv2.imread(img_file)
     (img_height, img_width, _) = img.shape
     resave_file = os.path.join(save_image_dir, save_file_name + os.path.splitext(full_file_name)[-1])
