@@ -21,7 +21,7 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 #
-# python3 labelme_to_yolo.py --class_num=5 --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/echo_park --loop_cnt=1 --output_dir=/home/david/dataset/detect/yolo/echo_park_class5X1
+# python3 labelme_to_yolo.py --class_num=4 --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/echo_park --output_dir=/home/david/dataset/detect/yolo/all_class4
 # 
 # python3 labelme_to_yolo.py --input_dir=/home/david/dataset/detect/CBD --show_statistic=True
 #
@@ -42,7 +42,7 @@ from typing import List
 import os, sys, math, shutil, random, datetime, signal, argparse
 
 
-categories4_list = ['person', 'rider', 'car', 'lg']
+categories4_list = ['person', 'rider', 'tricycle', 'car']
 categories5_list = ['person', 'rider', 'tricycle', 'car', 'lg']
 TQDM_BAR_FORMAT = '{l_bar}{bar:40}| {n_fmt}/{total_fmt} {elapsed}'
 
@@ -85,7 +85,7 @@ def parse_args(args = None):
         "--class_num",
         type = int,
         required = False,
-        help = "Class num. 4:{'person':'0', 'rider':'1', 'car':'2', 'lg':'3'}, 5:{'person':'0', 'rider':'1', 'tricycle':'2', 'car':'3', 'lg':'4'}, 6:{'person':'0', 'rider':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
+        help = "Class num. 4:{'person':'0', 'rider':'1', 'tricycle':'2', 'car':'3'}, 5:{'person':'0', 'rider':'1', 'tricycle':'2', 'car':'3', 'lg':'4'}, 6:{'person':'0', 'rider':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
     )
     parser.add_argument(
         "--target_width",
@@ -210,7 +210,7 @@ def GenerateKITTIDataset(img_file:str, label_dict_list, output_dir:str, deal_cnt
 
     dir_name, full_file_name = os.path.split(img_file)
     sub_dir_name = dir_name.split('/')[-1]
-    save_file_name = sub_dir_name + "_" + str(random.randint(10000000, 99999999)).zfill(8)
+    save_file_name = sub_dir_name + "_" + str(random.randint(0, 99999999)).zfill(8)
     #print( save_file_name )
     
     # resize labels
@@ -251,16 +251,16 @@ def labelme2_class4_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_height
     if shape_obj['label'] in ('person'):
         type_str = '0'
         obj_cnt_list[0] += 1
-    elif shape_obj['label'] in ('bicycle', 'motorbike', 'tricycle'):
+    elif shape_obj['label'] in ('bicycle', 'motorbike'):
         type_str = '1'
         obj_cnt_list[1] += 1
-    elif shape_obj['label'] in ('car', 'bus', 'truck'):
+    elif shape_obj['label'] in ('tricycle'):
         type_str = '2'
         obj_cnt_list[2] += 1
-    elif shape_obj['label'] in ('R', 'G', 'Y', 'B'):
+    elif shape_obj['label'] in ('car', 'bus', 'truck'):
         type_str = '3'
         obj_cnt_list[3] += 1
-    elif shape_obj['label'] in ('plate', 'plate+'):
+    elif shape_obj['label'] in ('plate', 'plate+', 'R', 'G', 'Y', 'B'):
         return
     else:
         prRed('Label {} not support, return'.format(shape_obj['label']))
@@ -273,6 +273,7 @@ def labelme2_class4_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_height
     yolo_width = obj_width/img_width
     yolo_height = obj_height/img_height
     if (x_center <= 0.0) or (y_center <= 0.0) or (yolo_width <= 0.0) or (yolo_height <= 0.0):
+        prRed('Yolo pos {} {} {} {} err, return'.format(x_center, y_center, yolo_width, yolo_height))
         return
     fp.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(type_str, x_center, y_center, yolo_width, yolo_height))
     return
@@ -309,6 +310,7 @@ def labelme2_class5_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_height
     yolo_width = obj_width/img_width
     yolo_height = obj_height/img_height
     if (x_center <= 0.0) or (y_center <= 0.0) or (yolo_width <= 0.0) or (yolo_height <= 0.0):
+        prRed('Yolo pos {} {} {} {} err, return'.format(x_center, y_center, yolo_width, yolo_height))
         return
     fp.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(type_str, x_center, y_center, yolo_width, yolo_height))
     return
@@ -339,7 +341,7 @@ def deal_one_image_label_files(
     dir_name, full_file_name = os.path.split(img_file)
     sub_dir_name0, sub_dir_name1 = dir_name.split('/')[-2], dir_name.split('/')[-1]
     #print(sub_dir_name0, sub_dir_name1)
-    save_file_name = sub_dir_name0 + "_" + sub_dir_name1 + "_" + os.path.splitext(full_file_name)[0] + "_" + str(random.randint(100000000000, 999999999999)).zfill(12)
+    save_file_name = sub_dir_name0 + "_" + sub_dir_name1 + "_" + os.path.splitext(full_file_name)[0] + "_" + str(random.randint(0, 999999999999)).zfill(12)
     #print(save_file_name)
     img = cv2.imread(img_file)
     (img_height, img_width, _) = img.shape
