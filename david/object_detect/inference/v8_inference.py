@@ -1,7 +1,7 @@
 #
 #
-#
-# 
+# cmd:
+#       rm -rf result/*;python3 v8_inference.py --input=/home/david/code/yolo/ONNX-YOLOv8-Object-Detection/doc/input --output_dir=./result --interval=250
 #
 import cv2
 from ultralytics import YOLO
@@ -46,8 +46,8 @@ def parse_args(args = None):
         "--model_file",
         type = str,
         required = False,
-        default = './models/best.onnx',
-        help = "Model file path, such as:models/best.onnx."
+        default = './best.pt',
+        help = "Model file path, such as: ./best.pt."
     )
     parser.add_argument(
         "--interval",
@@ -85,40 +85,65 @@ def parse_args(args = None):
     return parser.parse_args(args)
 
 
+def inference_img(
+        input_file, 
+        output_dir, 
+        conf_thres, 
+        iou_thres,
+        yolov8_detector
+)->None:
+    file_path, file_type = os.path.splitext(input_file)
+    save_file = os.path.join(output_dir, file_path.split('/')[-1] + file_type)
+    #print(save_file)
+    img = cv2.imread(input_file, 1)
+    # Detect Objects
+    results = yolov8_detector(frame, conf=conf_thres, iou=iou_thres)
+    # Visualize the results on the frame
+    annotated_frame = results[0].plot(line_width =3, font_size=6.0, masks=True)
+    cv2.imwrite(save_file, annotated_frame)
+    return
 
 
-def main_func(args = None):
-    """ Main function for data preparation. """
-    signal.signal(signal.SIGINT, term_sig_handler)
-    #args = parse_args(args)
-    # Load the YOLOv8 model
-    model = YOLO('best.pt')
-
-    # Open the video file
-    video_path = "/home/david/code/yolo/ONNX-YOLOv8-Object-Detection/doc/input/NO1_highway.mp4"
-    cap = cv2.VideoCapture(video_path)
-
+def inference_video_file(
+        input_file, 
+        output_dir, 
+        interval, 
+        conf_thres, 
+        iou_thres,
+        yolov8_detector
+)->None:
+    file_path, file_type = os.path.splitext(input_file)
+    prGreen('Video file is {}'.format(input_file))
+    videoCapture = cv2.VideoCapture(input_file)
+    fps = videoCapture.get(cv2.CAP_PROP_FPS)
+    size = (int(videoCapture.get(cv2.CAP_PROP_FRAME_WIDTH)), 
+            int(videoCapture.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+    fNUMS = videoCapture.get(cv2.CAP_PROP_FRAME_COUNT)
+    prYellow('Video info: {} {} {}'.format(fps, size, fNUMS))
+    # read frames
+    success = True
+    #success, frame = videoCapture.read()
     loop_cnt = 0
     infer_cnt = 0
+    success = True
     # Loop through the video frames
-    while cap.isOpened():
+    while videoCapture.isOpened() and success:
         # Read a frame from the video
-        success, frame = cap.read()
-
+        success, frame = videoCapture.read()
+        loop_cnt += 1
+        if (interval != 0) and ((loop_cnt % interval) != 0):
+            continue
         if success:
             # Run YOLOv8 inference on the frame
-            results = model(frame)
-
+            results = yolov8_detector(frame, conf=conf_thres, iou=iou_thres)
             # Visualize the results on the frame
             annotated_frame = results[0].plot(line_width =3, font_size=6.0, masks=True)
-
             # Display the annotated frame
             #cv2.imshow("YOLOv8 Inference", annotated_frame)
-
             # Break the loop if 'q' is pressed
             #if cv2.waitKey(1) & 0xFF == ord("q"):
             #    break
-            save_file = os.path.join('./result/' + str(infer_cnt).zfill(20) + '.jpg')
+            save_file = os.path.join(output_dir, file_path.split('/')[-1] + '_' + str(infer_cnt).zfill(20) + '.jpg')
             infer_cnt += 1
             cv2.imwrite(save_file, annotated_frame)
             prGreen('Save inference result: {}'.format(save_file))
@@ -126,8 +151,56 @@ def main_func(args = None):
             # Break the loop if the end of the video is reached
             break
     # Release the video capture object and close the display window
-    cap.release()
-    cv2.destroyAllWindows()
+    videoCapture.release()
+    prGreen('Read images count: {}, inference images count:{}'.format(loop_cnt, infer_cnt))
+    return
+
+
+def deal_input_file(
+        input_file, 
+        output_dir, 
+        interval, 
+        conf_thres, 
+        iou_thres,
+        yolov8_detector
+)->None:
+    file_path, file_type = os.path.splitext(input_file)
+    if file_path.split('/')[-1] == '.gitignore':
+        prGreen('It is a \'.gitignore\' file, return')
+        return
+    if file_type in ('.jpg', '.png'):
+        inference_img(input_file, output_dir, conf_thres, iou_thres, yolov8_detector)
+    elif file_type in ('.mp4'):
+        inference_video_file(input_file, output_dir, interval, conf_thres, iou_thres, yolov8_detector)
+    else:
+        prYellow('file_type({}) not support, return'.format(file_type))
+        return
+    return
+
+
+def main_func(args = None):
+    """ Main function for data preparation. """
+    signal.signal(signal.SIGINT, term_sig_handler)
+    args = parse_args(args)
+    args.input = os.path.abspath(args.input)
+    args.output_dir = os.path.abspath(args.output_dir)
+    prYellow('input: {}, output_dir: {}, model_file: {}'.format(args.input, args.output_dir, args.model_file))
+    # Load the YOLOv8 model
+    yolov8_detector = YOLO(args.model_file)
+    #------
+    if os.path.isdir(args.input):
+        #print("it's a directory")
+        for root, dirs, files in os.walk(args.input):
+            for lop_file in files:
+                deal_file = os.path.join(root, lop_file)
+                #print(deal_file)
+                deal_input_file(deal_file, args.output_dir, args.interval, args.conf_thres, args.iou_thres, yolov8_detector)
+    elif os.path.isfile(args.input):
+        #print("it's a normal file")
+        deal_input_file(args.input, args.output_dir, args.interval, args.conf_thres, args.iou_thres, yolov8_detector)
+    else:
+        prRed("it's a special file(socket,FIFO,device file)")
+        return
     return
 
 

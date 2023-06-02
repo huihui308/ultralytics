@@ -100,14 +100,14 @@ copy yolov8n.pt to project directory.
 $ cp runs/detect/obj_det_class11/weights/best.pt yolov8n.pt
 ```
 
-# class4
+## class4
 ```
 $ yolo task=detect mode=train model=david/object_detect/model/cuiwei.pt data=david/object_detect/data/det_data_class4.yaml epochs=300 batch=32 device=0 workers=56 resume=False name=obj_det_class4
 ```
 
-# class5
-## Signal gpu:
-### yolov8n:
+## class5
+### Signal gpu:
+#### yolov8n:
 ```
 yolov8n:
 $ yolo task=detect mode=train model=david/object_detect/model/yolov8n_obj_det_class4_ktti_bdd_cbd_echopark.pt data=david/object_detect/data/det_data_class5.yaml epochs=300 batch=32 device=0 workers=56 resume=False name=v8n_output_echopark_class5_0
@@ -115,18 +115,24 @@ $ yolo task=detect mode=train model=david/object_detect/model/yolov8n_obj_det_cl
 yolov8n-p2:
 $ yolo task=detect mode=train model=yolov8n-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=16 device=0 workers=56 resume=False name=v8np2_output_all_class5_0
 
+yolov8n-p2x1280:
+$ yolo task=detect mode=train model=yolov8n-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=16 device=0 imgsz=1280 workers=56 resume=False name=v8np2x1280_output_all_class5_0
+
 yolov8n-p6:
 $ yolo task=detect mode=train model=yolov8n-p6.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=16 device=0 workers=56 resume=False name=v8np6_output_all_class5_0
 ```
 
-### yolov8s
+#### yolov8s
 ```
 yolov8s-p2:
 $ yolo task=detect mode=train model=yolov8s-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=16 device=0 workers=56 resume=False name=v8sp2_output_all_class5_0
+
+yolov8s-p2x1280:
+$ yolo task=detect mode=train model=yolov8s-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=16 device=0 imgsz=1280 workers=56 resume=False name=v8sp2x1280_output_all_class5_0
 ```
 
-## Two 3080ti:
-### yolov8n
+### Two 3080ti:
+#### yolov8n
 ```
 yolov8n:
 $ yolo task=detect mode=train model=david/object_detect/model/yolov8n_obj_det_class4_ktti_bdd_cbd_echopark.pt data=david/object_detect/data/det_data_class5.yaml epochs=300 batch=64 device=0,1 workers=56 resume=False name=v8n_output_all_class5_0
@@ -134,11 +140,14 @@ $ yolo task=detect mode=train model=david/object_detect/model/yolov8n_obj_det_cl
 yolov8n-p2:
 $ yolo task=detect mode=train model=yolov8n-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=64 device=0,1 workers=56 resume=False name=v8np2_output_all_class5_0
 
+yolov8n-p2x1280:
+$ yolo task=detect mode=train model=yolov8n-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=64 device=0,1 imgsz=1280 workers=56 resume=False name=v8np2x1280_output_all_class5_0
+
 yolov8n-p6:
 $ yolo task=detect mode=train model=yolov8n-p6.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=64 device=0,1 workers=56 resume=False name=v8np6_output_all_class5_0
 ```
 
-### yolov8s:
+#### yolov8s:
 ```
 yolov8s:
 $ yolo task=detect mode=train model=yolov8s.pt data=david/object_detect/data/det_data_class5.yaml epochs=300 batch=64 device=0,1 workers=56 resume=False name=v8s_output_all_class5_0
@@ -146,11 +155,14 @@ $ yolo task=detect mode=train model=yolov8s.pt data=david/object_detect/data/det
 yolov8s-p2:
 $ yolo task=detect mode=train model=yolov8s-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=32 device=0,1 workers=56 resume=False name=v8sp2_output_all_class5_0
 
+yolov8s-p2x1280:
+$ yolo task=detect mode=train model=yolov8s-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=32 device=0,1 imgsz=1280 workers=56 resume=False name=v8sp2x1280_output_all_class5_0
+
 yolov8s-p6:
 $ yolo task=detect mode=train model=yolov8s-p6.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=32 device=0,1 workers=56 resume=False name=v8sp6_output_all_class5_0
 ```
 
-### yolov8m:
+#### yolov8m:
 ```
 yolov8m:
 $ yolo task=detect mode=train model=yolov8m.pt data=david/object_detect/data/det_data_class5.yaml epochs=300 batch=64 device=0,1 workers=56 resume=False name=v8m_output_all_class5_0
@@ -162,7 +174,7 @@ yolov8m-p6:
 $ yolo task=detect mode=train model=yolov8m-p6.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=64 device=0,1 workers=56 resume=False name=v8mp6_output_all_class5_0
 ```
 
-### yolov8l:
+#### yolov8l:
 ```
 yolov8l:
 $ yolo task=detect mode=train model=yolov8l.pt data=david/object_detect/data/det_data_class5.yaml epochs=300 batch=64 device=0,1 workers=56 resume=False name=v8l_output_all_class5_0
@@ -174,7 +186,7 @@ yolov8l-p6:
 $ yolo task=detect mode=train model=yolov8l-p6.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=64 device=0,1 workers=56 resume=False name=v8lp6_output_all_class5_0
 ```
 
-### yolov8x:
+#### yolov8x:
 ```
 yolov8x:
 $ yolo task=detect mode=train model=yolov8x.pt data=david/object_detect/data/det_data_class5.yaml epochs=300 batch=64 device=0,1 workers=56 resume=False name=v8x_output_all_class5_0
@@ -186,15 +198,16 @@ yolov8x-p6:
 $ yolo task=detect mode=train model=yolov8x-p6.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=64 device=0,1 workers=56 resume=False name=v8xp6_output_all_class5_0
 ```
 
-# class6
+## class6
 ```
 $ yolo task=detect mode=train model=david/object_detect/model/cuiwei.pt data=david/object_detect/data/det_data_class6.yaml epochs=300 batch=32 device=0 workers=56 resume=False name=obj_det_class6
 ```
 
-# class11
+## class11
 ```
 $ yolo task=detect mode=train model=david/object_detect/model/cuiwei.pt data=david/object_detect/data/det_data_class11.yaml epochs=300 batch=32 device=0 workers=56 resume=False name=obj_det_class11
 ```
+
 
 # Test
 ```
@@ -202,6 +215,12 @@ $ yolo predict model=yolov8n.pt source="https://ultralytics.com/images/bus.jpg"
 $ yolo predict model=runs/detect/train/weights/best.pt source=david/datasets/output/test/
 ```
 There are results in './runs/detect/predict'
+
+
+# export
+```
+$ yolo mode=export model=./runs/detect/yolov8n_echopark_class5/weights/best.pt format=onnx dynamic=True
+```
 
 
 # Deploy
