@@ -113,53 +113,53 @@ yolov8n:
 $ yolo task=detect mode=train model=david/object_detect/model/yolov8n_obj_det_class4_ktti_bdd_cbd_echopark.pt data=david/object_detect/data/det_data_class5.yaml epochs=300 batch=32 device=0 workers=56 resume=False name=v8n_output_echopark_class5_0
 
 yolov8n-p2:
-$ yolo task=detect mode=train model=yolov8n-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=16 device=0 workers=56 resume=False name=v8np2_output_all_class5_0
+$ yolo task=detect mode=train model=yolov8n-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=16 device=0 workers=56 resume=False name=v8np2_1x3080ti_alldatasets_class5_0
 
 yolov8n-p2x1280:
-$ yolo task=detect mode=train model=yolov8n-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=16 device=0 imgsz=1280 workers=56 resume=False name=v8np2x1280_output_all_class5_0
+$ yolo task=detect mode=train model=yolov8n-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=16 device=0 imgsz=1280 workers=56 resume=False name=v8np2x1280_1x3080ti_alldatasets_class5_0
 
 yolov8n-p6:
-$ yolo task=detect mode=train model=yolov8n-p6.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=16 device=0 workers=56 resume=False name=v8np6_output_all_class5_0
+$ yolo task=detect mode=train model=yolov8n-p6.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=16 device=0 workers=56 resume=False name=v8np6_1x3080ti_alldatasets_class5_0
 ```
 
 #### yolov8s
 ```
 yolov8s-p2:
-$ yolo task=detect mode=train model=yolov8s-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=16 device=0 workers=56 resume=False name=v8sp2_output_all_class5_0
+$ yolo task=detect mode=train model=yolov8s-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=16 device=0 workers=56 resume=False name=v8sp2_1x3080ti_alldatasets_class5_0
 
 yolov8s-p2x1280:
-$ yolo task=detect mode=train model=yolov8s-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=16 device=0 imgsz=1280 workers=56 resume=False name=v8sp2x1280_output_all_class5_0
+$ yolo task=detect mode=train model=yolov8s-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=16 device=0 imgsz=1280 workers=56 resume=False name=v8sp2x1280_1x3080ti_alldatasets_class5_0
 ```
 
 ### Two 3080ti:
 #### yolov8n
 ```
 yolov8n:
-$ yolo task=detect mode=train model=david/object_detect/model/yolov8n_obj_det_class4_ktti_bdd_cbd_echopark.pt data=david/object_detect/data/det_data_class5.yaml epochs=300 batch=64 device=0,1 workers=56 resume=False name=v8n_output_all_class5_0
+$ yolo task=detect mode=train model=david/object_detect/model/yolov8n_obj_det_class4_ktti_bdd_cbd_echopark.pt data=david/object_detect/data/det_data_class5.yaml epochs=300 batch=64 device=0,1 workers=56 resume=False name=v8n_2x3080ti_alldatasets_class5_0
 
 yolov8n-p2:
-$ yolo task=detect mode=train model=yolov8n-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=64 device=0,1 workers=56 resume=False name=v8np2_output_all_class5_0
+$ yolo task=detect mode=train model=yolov8n-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=64 device=0,1 workers=56 resume=False name=v8np2_2x3080ti_alldatasets_class5_0
 
 yolov8n-p2x1280:
-$ yolo task=detect mode=train model=yolov8n-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=64 device=0,1 imgsz=1280 workers=56 resume=False name=v8np2x1280_output_all_class5_0
+$ yolo task=detect mode=train model=yolov8n-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=64 device=0,1 imgsz=1280 workers=56 resume=False name=v8np2x1280_2x3080ti_alldatasets_class5_0
 
 yolov8n-p6:
-$ yolo task=detect mode=train model=yolov8n-p6.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=64 device=0,1 workers=56 resume=False name=v8np6_output_all_class5_0
+$ yolo task=detect mode=train model=yolov8n-p6.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=64 device=0,1 workers=56 resume=False name=v8np6_2x3080ti_alldatasets_class5_0
 ```
 
 #### yolov8s:
 ```
 yolov8s:
-$ yolo task=detect mode=train model=yolov8s.pt data=david/object_detect/data/det_data_class5.yaml epochs=300 batch=64 device=0,1 workers=56 resume=False name=v8s_output_all_class5_0
+$ yolo task=detect mode=train model=yolov8s.pt data=david/object_detect/data/det_data_class5.yaml epochs=300 batch=64 device=0,1 workers=56 resume=False name=v8s_2x3080ti_alldatasets_class5_0
 
 yolov8s-p2:
-$ yolo task=detect mode=train model=yolov8s-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=32 device=0,1 workers=56 resume=False name=v8sp2_output_all_class5_0
+$ yolo task=detect mode=train model=yolov8s-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=300 batch=64 device=0,1 workers=30 close_mosaic=1 resume=False name=v8sp2_2x3080ti_alldatasets_class5_0
 
 yolov8s-p2x1280:
-$ yolo task=detect mode=train model=yolov8s-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=32 device=0,1 imgsz=1280 workers=56 resume=False name=v8sp2x1280_output_all_class5_0
+$ yolo task=detect mode=train model=yolov8s-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=32 device=0,1 imgsz=1280 workers=56 resume=False name=v8sp2x1280_2x3080ti_alldatasets_class5_0
 
 yolov8s-p6:
-$ yolo task=detect mode=train model=yolov8s-p6.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=32 device=0,1 workers=56 resume=False name=v8sp6_output_all_class5_0
+$ yolo task=detect mode=train model=yolov8s-p6.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=32 device=0,1 workers=56 resume=False name=v8sp6_2x3080ti_alldatasets_class5_0
 ```
 
 #### yolov8m:
