@@ -189,7 +189,7 @@ $ yolo task=detect mode=train model=yolov8l-p6.yaml data=david/object_detect/dat
 #### yolov8x:
 ```
 yolov8x:
-$ yolo task=detect mode=train model=yolov8x.pt data=david/object_detect/data/det_data_class5.yaml epochs=300 batch=64 device=0,1 workers=56 resume=False name=v8x_output_all_class5_0
+$ yolo task=detect mode=train model=yolov8x.pt data=david/object_detect/data/det_data_class5.yaml epochs=300 batch=32 device=0,1 workers=30 resume=False name=v8x_2x3080ti_alldatasets_class5_0
 
 yolov8x-p2:
 $ yolo task=detect mode=train model=yolov8x-p2.yaml data=david/object_detect/data/det_data_class5.yaml epochs=500 batch=64 device=0,1 workers=56 resume=False name=v8xp2_output_all_class5_0
@@ -217,13 +217,16 @@ $ yolo predict model=runs/detect/train/weights/best.pt source=david/datasets/out
 There are results in './runs/detect/predict'
 
 
-# export
+# Deploy
+
+## export to onnx
 ```
 $ yolo mode=export model=./runs/detect/yolov8n_echopark_class5/weights/best.pt format=onnx dynamic=True
+
+$ yolo mode=export model=./best.pt format=onnx half=True optimize=True simplify=True imgsz=640
+
+$ python3 export_yoloV8.py -w best.pt --simplify --batch=8 -s 640
 ```
-
-
-# Deploy
 
 ## Deploy on deepstream-6.0
 Reference: https://github.com/marcoslucianops/DeepStream-Yolo/blob/master/docs/YOLOv8.md
