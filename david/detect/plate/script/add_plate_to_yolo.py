@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
-#
+# 
+# This file soft link plate jpg and txt file to result_dir. So if you data is CCPD, you must use ccpd_process.py to generate txt files.
 # $ python3 add_plate_to_yolo.py --plate_dir=/home/david/dataset/lpd_lpr/detect_plate_datasets --result_dir=./
-# $ python3 add_plate_to_yolo.py --plate_dir=/home/david/dataset/detect/CBD --result_dir=./
 #
 import cv2
 import json
@@ -15,18 +15,18 @@ import os, sys, json, time, random, signal, shutil, datetime, argparse
 TQDM_BAR_FORMAT = '{l_bar}{bar:40}| {n_fmt}/{total_fmt} {elapsed}'
 
 
-def prRed(skk): print("\033[91m {}\033[00m" .format(skk))
-def prGreen(skk): print("\033[92m {}\033[00m" .format(skk)) 
-def prYellow(skk): print("\033[93m {}\033[00m" .format(skk))
-def prLightPurple(skk): print("\033[94m {}\033[00m" .format(skk))
-def prPurple(skk): print("\033[95m {}\033[00m" .format(skk))
-def prCyan(skk): print("\033[96m {}\033[00m" .format(skk))
-def prLightGray(skk): print("\033[97m {}\033[00m" .format(skk)) 
-def prBlack(skk): print("\033[98m {}\033[00m" .format(skk))
+def prRed(skk): print("\033[91m \r>> {}: {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prGreen(skk): print("\033[92m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk)) 
+def prYellow(skk): print("\033[93m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prLightPurple(skk): print("\033[94m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prPurple(skk): print("\033[95m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prCyan(skk): print("\033[96m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prLightGray(skk): print("\033[97m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk)) 
+def prBlack(skk): print("\033[98m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
 
 
-def term_sig_handler(signum, frame) -> None:
-    sys.stdout.write('\r>> {}: catched singal: {}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), signum))
+def term_sig_handler(signum, frame)->None:
+    prRed('catched singal: {}\n'.format(signum))
     sys.stdout.flush()
     os._exit(0)
 
@@ -46,6 +46,13 @@ def parse_args(args = None):
         default = "./output",
         required = False,
         help = "Save plate images and labelme json files dir."
+    )
+    parser.add_argument(
+        "--train_ratio",
+        type = float,
+        default = 0.8,
+        required = False,
+        help = "Train ratio, the other is val."
     )
     return parser.parse_args(args)
 
@@ -81,29 +88,25 @@ def get_file_list(input_dir: str, label_file_list:List[str])->None:
 
 g_crop_val_cnt = 0
 g_crop_train_cnt = 0
-def split_plate(save_main_dir:str, header_file)->None:
+def split_plate(save_main_dir:str, header_file, data_info)->None:
     global g_crop_val_cnt
     global g_crop_train_cnt
-    train_fp = open(os.path.join(save_main_dir, 'train.txt'), "a+")
-    val_fp = open(os.path.join(save_main_dir, 'val.txt'), "a+")
     #------
     time_str = str( datetime.datetime.now().strftime("%Y%m%d_%2H%2M%2S") ) + '_'
-    if random.random() < 0.7:
+    if data_info[1] == 0:
         obj_img_path = save_main_dir + "/train/images/vehicle_" + time_str + str(g_crop_train_cnt).zfill(8) + ".jpg"
         obj_txt_path = save_main_dir + "/train/labels/vehicle_" + time_str + str(g_crop_train_cnt).zfill(8) + ".txt"
         g_crop_train_cnt += 1
-        train_fp.write(obj_img_path + '\n')
-        train_fp.flush()
+        data_info[0].write(obj_img_path + '\n')
+        data_info[0].flush()
     else:
         obj_img_path = save_main_dir + "/val/images/vehicle_" + time_str + str(g_crop_val_cnt).zfill(8) + ".jpg"
         obj_txt_path = save_main_dir + "/val/labels/vehicle_" + time_str + str(g_crop_val_cnt).zfill(8) + ".txt"
         g_crop_val_cnt += 1
-        val_fp.write(obj_img_path + '\n')
-        val_fp.flush()
+        data_info[0].write(obj_img_path + '\n')
+        data_info[0].flush()
     os.symlink(header_file + '.jpg', obj_img_path)
     os.symlink(header_file + '.txt', obj_txt_path)
-    train_fp.close()
-    val_fp.close()
     return
 
 
@@ -119,11 +122,19 @@ def main_func(args = None)->None:
     label_file_list = []
     get_file_list(args.plate_dir, label_file_list)
     #prYellow('\r>> {}: label_file_list len:{}'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), len(label_file_list)))
+    train_fp = open(os.path.join(save_main_dir, 'train.txt'), "a+")
+    val_fp = open(os.path.join(save_main_dir, 'val.txt'), "a+")
     pbar = enumerate(label_file_list)
     pbar = tqdm(pbar, total=len(label_file_list), desc="Processing", colour='blue', bar_format=TQDM_BAR_FORMAT)
-    print(label_file_list[0])
+    #print(label_file_list[0])
     for (i, header_file) in pbar:
-        split_plate(save_main_dir, header_file)
+        if (i % 10) < int(args.train_ratio * 10):
+            data_info = [train_fp, 0]
+        else:
+            data_info = [val_fp, 1]
+        split_plate(save_main_dir, header_file, data_info)
+    train_fp.close()
+    val_fp.close()
     return
 
 

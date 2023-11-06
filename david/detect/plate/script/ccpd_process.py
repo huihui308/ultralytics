@@ -1,28 +1,29 @@
 # -*- coding: utf-8 -*-
 #
-# $ python3 ccpd_process.py --ccpd_dir=/home/david/dataset/lpd_lpr/detect_plate_datasets --result_dir=./
+# $ python3 ccpd_process.py --ccpd_dir=/home/david/dataset/lpd_lpr/detect_plate_datasets
 #
 #
 import cv2
 import numpy as np
+from tqdm import tqdm
 import os, sys, json, time, random, signal, shutil, datetime, argparse
 
 
 TQDM_BAR_FORMAT = '{l_bar}{bar:40}| {n_fmt}/{total_fmt} {elapsed}'
 
 
-def prRed(skk): print("\033[91m {}\033[00m" .format(skk))
-def prGreen(skk): print("\033[92m {}\033[00m" .format(skk)) 
-def prYellow(skk): print("\033[93m {}\033[00m" .format(skk))
-def prLightPurple(skk): print("\033[94m {}\033[00m" .format(skk))
-def prPurple(skk): print("\033[95m {}\033[00m" .format(skk))
-def prCyan(skk): print("\033[96m {}\033[00m" .format(skk))
-def prLightGray(skk): print("\033[97m {}\033[00m" .format(skk)) 
-def prBlack(skk): print("\033[98m {}\033[00m" .format(skk))
+def prRed(skk): print("\033[91m \r>> {}: {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prGreen(skk): print("\033[92m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk)) 
+def prYellow(skk): print("\033[93m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prLightPurple(skk): print("\033[94m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prPurple(skk): print("\033[95m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prCyan(skk): print("\033[96m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prLightGray(skk): print("\033[97m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk)) 
+def prBlack(skk): print("\033[98m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
 
 
-def term_sig_handler(signum, frame) -> None:
-    sys.stdout.write('\r>> {}: catched singal: {}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), signum))
+def term_sig_handler(signum, frame)->None:
+    prRed('catched singal: {}\n'.format(signum))
     sys.stdout.flush()
     os._exit(0)
 
@@ -36,37 +37,17 @@ def parse_args(args = None):
         required = True,
         help = "Labelme dir."
     )
-    parser.add_argument(
-        "--result_dir",
-        type = str,
-        default = "./output",
-        required = False,
-        help = "Save plate images and labelme json files dir."
-    )
     return parser.parse_args(args)
 
 
 def all_file_path(rootPath, allFIleList):
     fileList = os.listdir(rootPath)
     for temp in fileList:
-        if os.path.isfile(os.path.join(rootPath,temp)):
+        if os.path.isfile(os.path.join(rootPath, temp)):
             if temp.endswith(".jpg"):
-                allFIleList.append(os.path.join(rootPath,temp))
+                allFIleList.append(os.path.join(rootPath, temp))
         else:
-            all_file_path(os.path.join(rootPath,temp),allFIleList)
-
-
-def make_directory(output_dir:str)->None:
-    if not os.path.exists(output_dir):
-        os.makedirs(output_dir)
-    if not os.path.exists( os.path.join(output_dir, 'train/images') ):
-        os.makedirs( os.path.join(output_dir, 'train/images') )
-    if not os.path.exists( os.path.join(output_dir, 'train/labels') ):
-        os.makedirs( os.path.join(output_dir, 'train/labels') )
-    if not os.path.exists( os.path.join(output_dir, 'val/images') ):
-        os.makedirs( os.path.join(output_dir, 'val/images') )
-    if not os.path.exists( os.path.join(output_dir, 'val/labels') ):
-        os.makedirs( os.path.join(output_dir, 'val/labels') )
+            all_file_path(os.path.join(rootPath,temp), allFIleList)
     return
 
 
@@ -124,28 +105,28 @@ def get_partical_ccpd():
 
 def get_rect_and_landmarks(img_path):
     file_name = img_path.split("/")[-1].split("-")
-    print(len(file_name))
-    if len(file_name) < 5:
-        return None, None, None
-    landmarks_np =np.zeros((5,2))
+    #print(len(file_name))
+    if len(file_name) != 7:
+        return (None, None, None)
+    landmarks_np = np.zeros((5, 2))
     rect = file_name[2].split("_")
-    landmarks=file_name[3].split("_")
+    landmarks = file_name[3].split("_")
     rect_str = "&".join(rect)
-    landmarks_str= "&".join(landmarks)
-    rect= rect_str.split("&")
-    landmarks=landmarks_str.split("&")
-    rect=[int(x) for x in rect]
-    landmarks=[int(x) for x in landmarks]
+    landmarks_str = "&".join(landmarks)
+    rect = rect_str.split("&")
+    landmarks = landmarks_str.split("&")
+    rect = [int(x) for x in rect]
+    landmarks = [int(x) for x in landmarks]
     for i in range(4):
-        landmarks_np[i][0]=landmarks[2*i]
-        landmarks_np[i][1]=landmarks[2*i+1]
-#    middle_landmark_w =int((landmarks[4]+landmarks[6])/2) 
-#    middle_landmark_h =int((landmarks[5]+landmarks[7])/2) 
-#    landmarks.append(middle_landmark_w)
-#    landmarks.append(middle_landmark_h)
-    landmarks_np_new=order_points(landmarks_np)
-#    landmarks_np_new[4]=np.array([middle_landmark_w,middle_landmark_h])
-    return rect,landmarks,landmarks_np_new
+        landmarks_np[i][0] = landmarks[2*i]
+        landmarks_np[i][1] = landmarks[2*i+1]
+    #    middle_landmark_w =int((landmarks[4]+landmarks[6])/2) 
+    #    middle_landmark_h =int((landmarks[5]+landmarks[7])/2) 
+    #    landmarks.append(middle_landmark_w)
+    #    landmarks.append(middle_landmark_h)
+    landmarks_np_new = order_points(landmarks_np)
+    #    landmarks_np_new[4]=np.array([middle_landmark_w,middle_landmark_h])
+    return (rect, landmarks, landmarks_np_new)
 
 
 def x1x2y1y2_yolo(rect,landmarks,img):
@@ -210,7 +191,7 @@ def yolo2x1y1x2y2(annotation,img):
     for i in range(5):
         landmarks[2*i]=landmarks[2*i]*w
         landmarks[2*i+1]=landmarks[2*i+1]*h
-    return new_rect,landmarks
+    return (new_rect, landmarks)
 
 
 def write_lable(file_path):
@@ -219,13 +200,13 @@ def write_lable(file_path):
 
 def process_files(img_path)->None:
     text_path = img_path.replace(".jpg", ".txt")
-    img =cv2.imread(img_path)
+    img = cv2.imread(img_path)
     rect, landmarks, landmarks_sort = get_rect_and_landmarks(img_path)
     if rect is None:
-        print('{} not CCPD format, continue'.format(img_path))
+        #prRed('{} not CCPD format, continue'.format(img_path))
         return
     # annotation=x1x2y1y2_yolo(rect,landmarks,img)
-    annotation = xywh2yolo(rect,landmarks_sort,img)
+    annotation = xywh2yolo(rect, landmarks_sort,img)
     str_label = "0 "
     for i in range(len(annotation[0])):
         str_label = str_label + " " + str(annotation[0][i])
@@ -234,42 +215,21 @@ def process_files(img_path)->None:
     with open(text_path,"w") as f:
         f.write(str_label)
     #print(img_path, str_label)
+    return
 
 
 def main_func(args = None)->None:
     signal.signal(signal.SIGINT, term_sig_handler)
     args = parse_args(args)
-    #------
-    save_main_dir = os.path.abspath(args.result_dir)
-    prYellow('\r>> {}: Save data dir:{}'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), save_main_dir))
-    make_directory(save_main_dir)
+    prYellow('CCPD dir:{}'.format(args.ccpd_dir))
     file_list = []
     all_file_path(args.ccpd_dir, file_list)
-    print(len(file_list), file_list[0])
-    for img_path in file_list:
+    #print(len(file_list), file_list[0])
+    pbar = enumerate(file_list)
+    pbar = tqdm(pbar, total=len(file_list), desc="Processing", colour='blue', bar_format=TQDM_BAR_FORMAT)
+    for (i, img_path) in pbar:
         # img_path = r"ccpd_yolo_test/02-90_85-173&466_452&541-452&553_176&556_178&463_454&460-0_0_6_26_15_26_32-68-53.jpg"
         process_files(img_path)
-    # get_partical_ccpd()
-    # file_root = r"ccpd/green_plate"
-    # file_list=[]
-    # all_file_path(file_root,file_list)
-    # count=0
-    # for img_path in file_list:
-    #     img_name = img_path.split(os.sep)[-1]
-    #     if not "&" in img_name:
-    #         count+=1
-    #         os.remove(img_path)
-    #         print(count,img_path)
-
-        # new_rect,new_landmarks=yolo2x1y1x2y2(annotation,img)
-        # rect= [int(x) for x in  new_rect]
-        # cv2.rectangle(img,(rect[0],rect[1]),(rect[2],rect[3]),(255,0,0),2)
-        # colors=[(0,255,0),(0,255,255),(255,255,0),(255,255,255),(255,0,255)] #绿 黄 青 白 
-        # for i in range(5):
-        #   cv2.circle(img,(landmarks[2*i],landmarks[2*i+1]),2,colors[i],2)
-        # cv2.imwrite("1.jpg",img)
-    #    print(rect,landmarks)
-        # get_partical_ccpd()
     return
 
 

@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 #
-# $ python3 labelme_plate_to_yolo.py --labelme_dir=/home/david/dataset/detect/echo_park --result_dir=./
-# $ python3 labelme_plate_to_yolo.py --labelme_dir=/home/david/dataset/detect/CBD --result_dir=./
+# $ python3 labelme_split_plate_to_yolo.py --labelme_dir=/home/david/dataset/detect/echo_park --result_dir=./
+# $ python3 labelme_split_plate_to_yolo.py --labelme_dir=/home/david/dataset/detect/CBD --result_dir=./
 #
 import cv2
 import json
@@ -15,18 +15,18 @@ import os, sys, json, time, random, signal, shutil, datetime, argparse
 TQDM_BAR_FORMAT = '{l_bar}{bar:40}| {n_fmt}/{total_fmt} {elapsed}'
 
 
-def prRed(skk): print("\033[91m {}\033[00m" .format(skk))
-def prGreen(skk): print("\033[92m {}\033[00m" .format(skk)) 
-def prYellow(skk): print("\033[93m {}\033[00m" .format(skk))
-def prLightPurple(skk): print("\033[94m {}\033[00m" .format(skk))
-def prPurple(skk): print("\033[95m {}\033[00m" .format(skk))
-def prCyan(skk): print("\033[96m {}\033[00m" .format(skk))
-def prLightGray(skk): print("\033[97m {}\033[00m" .format(skk)) 
-def prBlack(skk): print("\033[98m {}\033[00m" .format(skk))
+def prRed(skk): print("\033[91m \r>> {}: {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prGreen(skk): print("\033[92m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk)) 
+def prYellow(skk): print("\033[93m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prLightPurple(skk): print("\033[94m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prPurple(skk): print("\033[95m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prCyan(skk): print("\033[96m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prLightGray(skk): print("\033[97m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk)) 
+def prBlack(skk): print("\033[98m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
 
 
-def term_sig_handler(signum, frame) -> None:
-    sys.stdout.write('\r>> {}: catched singal: {}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), signum))
+def term_sig_handler(signum, frame)->None:
+    prRed('catched singal: {}\n'.format(signum))
     sys.stdout.flush()
     os._exit(0)
 
@@ -47,22 +47,13 @@ def parse_args(args = None):
         required = False,
         help = "Save plate images and labelme json files dir."
     )
-    """
     parser.add_argument(
-        "--time_delt",
-        type = int,
-        default = 3,
+        "--train_ratio",
+        type = float,
+        default = 0.8,
         required = False,
-        help = "Cut video time delt, second."
+        help = "Train ratio, the other is val."
     )
-    parser.add_argument(
-        "--input_batch_size",
-        type = int,
-        default = 4,
-        required = False,
-        help = "Input batch size."
-    )
-    """
     return parser.parse_args(args)
 
 
@@ -173,8 +164,7 @@ def scrop_vehicle_palte(
         img_file:str, 
         veh_pos:List[str], 
         obj_plate, 
-        train_fp,
-        val_fp)->None:
+        data_info)->None:
     global g_crop_val_cnt
     global g_crop_train_cnt
     #print(save_main_dir)
@@ -199,18 +189,18 @@ def scrop_vehicle_palte(
     #print(ptLeftTop, ptRightBottom)
     #cv2.rectangle(cropped_img, ptLeftTop, ptRightBottom, point_color, thickness, lineType)
     time_str = str( datetime.datetime.now().strftime("%Y%m%d_%2H%2M%2S") ) + '_'
-    if random.random() < 0.7:
+    if data_info[1] == 0:
         obj_img_path = save_main_dir + "/train/images/vehicle_" + time_str + str(g_crop_train_cnt).zfill(8) + ".jpg"
         obj_txt_path = save_main_dir + "/train/labels/vehicle_" + time_str + str(g_crop_train_cnt).zfill(8) + ".txt"
         g_crop_train_cnt += 1
-        train_fp.write(obj_img_path + '\n')
-        train_fp.flush()
+        data_info[0].write(obj_img_path + '\n')
+        data_info[0].flush()
     else:
         obj_img_path = save_main_dir + "/val/images/vehicle_" + time_str + str(g_crop_val_cnt).zfill(8) + ".jpg"
         obj_txt_path = save_main_dir + "/val/labels/vehicle_" + time_str + str(g_crop_val_cnt).zfill(8) + ".txt"
         g_crop_val_cnt += 1
-        val_fp.write(obj_img_path + '\n')
-        val_fp.flush()
+        data_info[0].write(obj_img_path + '\n')
+        data_info[0].flush()
     #prGreen('\r>> {}: Save image:{}, txt:{}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), obj_img_path, obj_txt_path))
     cv2.imwrite(obj_img_path, cropped_img)
     #------
@@ -252,9 +242,11 @@ def scrop_vehicle_palte(
     return
 
 
-def split_plate(save_main_dir:str, header_file, json_fp)->None:
-    train_fp = open(os.path.join(save_main_dir, 'train.txt'), "a+")
-    val_fp = open(os.path.join(save_main_dir, 'val.txt'), "a+")
+def split_plate(
+        save_main_dir:str, 
+        header_file, 
+        json_fp, 
+        data_info)->None:
     json_data = json_fp.read()
     parsed_json = json.loads(json_data)
     #print(parsed_json['shapes'])
@@ -271,9 +263,7 @@ def split_plate(save_main_dir:str, header_file, json_fp)->None:
         for one_plate in plate_list:
             if judge_plate_in_vehicle(one_veh['points'], one_plate['points']) == False:
                 continue
-            scrop_vehicle_palte(save_main_dir, header_file+'.jpg', one_veh['points'], one_plate, train_fp, val_fp)
-    train_fp.close()
-    val_fp.close()
+            scrop_vehicle_palte(save_main_dir, header_file+'.jpg', one_veh['points'], one_plate, data_info)
     return
 
 
@@ -283,18 +273,26 @@ def main_func(args = None)->None:
     args = parse_args(args)
     #------
     save_main_dir = os.path.abspath(args.result_dir)
-    prYellow('\r>> {}: Save data dir:{}'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), save_main_dir))
+    prYellow('Save data dir:{}'.format(save_main_dir))
     make_directory(save_main_dir)
     #------
     label_file_list = []
     get_file_list(args.labelme_dir, label_file_list)
-    #prYellow('\r>> {}: label_file_list len:{}'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), len(label_file_list)))
+    #prYellow('label_file_list len:{}'.format(len(label_file_list)))
     #for header_file in label_file_list:
+    train_fp = open(os.path.join(save_main_dir, 'train.txt'), "a+")
+    val_fp = open(os.path.join(save_main_dir, 'val.txt'), "a+")
     pbar = enumerate(label_file_list)
     pbar = tqdm(pbar, total=len(label_file_list), desc="Processing", colour='blue', bar_format=TQDM_BAR_FORMAT)
     for (i, header_file) in pbar:
         with open(header_file + '.json') as json_fp:
-            split_plate(save_main_dir, header_file, json_fp)
+            if (i % 10) < int(args.train_ratio * 10):
+                data_info = [train_fp, 0]
+            else:
+                data_info = [val_fp, 1]
+            split_plate(save_main_dir, header_file, json_fp, data_info)
+    train_fp.close()
+    val_fp.close()
     return
 
 
