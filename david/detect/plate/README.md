@@ -36,3 +36,11 @@ In end, you can soft link plate data to the datasets.
 ```
 $ python3 add_plate_to_yolo.py --plate_dir=/home/david/dataset/lpd_lpr/detect_plate_datasets --result_dir=./
 ```
+
+
+# Train
+
+Copy 'david/detect/plate/train.py' to ultralytics root directory. In ultralytics root directory.
+```
+$ python3 train.py
+```
