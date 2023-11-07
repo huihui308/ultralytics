@@ -8,13 +8,25 @@ class11: 'person', 'bicycle', 'motorbike', 'tricycle', 'car', 'bus', 'truck', 'p
 
 # Prepare datasets
 input_dir: Dataset which generate by labelme, it must contains a label file and a jpg file.
+
+Enter dataset directory and soft link script files.
+```
+$ cd /home/david/dataset/detect/yolov8/echo_park5
+$ ln -s /home/david/code/yolo/ultralytics/david/detect/prim_detect/script/labelme_to_yolo.py ./
+```
+
+## Check yolo data
+```
+$ python3 yolo_draw_image.py --class_num=5 --dataset_dir=./
+```
+
 ## class4
 ```
 $ cd david/object_detect/datasets/
 ```
 labelme format:
 ```
-$ python3 labelme_to_yolo.py --class_num=4 --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/echo_park --output_dir=/home/david/dataset/detect/yolo/all_class4
+$ python3 labelme_to_yolo.py --class_num=4 --input_dir=/home/david/dataset/detect/echo_park --output_dir=/home/david/dataset/detect/yolo/all_class4
 ```
 
 Argoverse-1.1 format:

@@ -47,23 +47,20 @@ categories5_list = ['person', 'rider', 'tricycle', 'car', 'lg']
 TQDM_BAR_FORMAT = '{l_bar}{bar:40}| {n_fmt}/{total_fmt} {elapsed}'
 
 
-def prRed(skk): print("\033[91m {}\033[00m" .format(skk))
-def prGreen(skk): print("\033[92m {}\033[00m" .format(skk)) 
-def prYellow(skk): print("\033[93m {}\033[00m" .format(skk))
-def prLightPurple(skk): print("\033[94m {}\033[00m" .format(skk))
-def prPurple(skk): print("\033[95m {}\033[00m" .format(skk))
-def prCyan(skk): print("\033[96m {}\033[00m" .format(skk))
-def prLightGray(skk): print("\033[97m {}\033[00m" .format(skk)) 
-def prBlack(skk): print("\033[98m {}\033[00m" .format(skk))
+def prRed(skk): print("\033[91m \r>> {}: {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prGreen(skk): print("\033[92m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk)) 
+def prYellow(skk): print("\033[93m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prLightPurple(skk): print("\033[94m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prPurple(skk): print("\033[95m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prCyan(skk): print("\033[96m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prLightGray(skk): print("\033[97m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk)) 
+def prBlack(skk): print("\033[98m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
 
 
-def term_sig_handler(signum, frame) -> None:
-    sys.stdout.write('\r>> {}: \n\n\n***************************************\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    sys.stdout.write('\r>> {}: Catched singal: {}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), signum))
-    sys.stdout.write('\r>> {}: \n***************************************\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+def term_sig_handler(signum, frame)->None:
+    prRed('catched singal: {}\n'.format(signum))
     sys.stdout.flush()
     os._exit(0)
-    return
 
 
 def parse_args(args = None):
@@ -86,18 +83,6 @@ def parse_args(args = None):
         type = int,
         required = False,
         help = "Class num. 4:{'person':'0', 'rider':'1', 'tricycle':'2', 'car':'3'}, 5:{'person':'0', 'rider':'1', 'tricycle':'2', 'car':'3', 'lg':'4'}, 6:{'person':'0', 'rider':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
-    )
-    parser.add_argument(
-        "--target_width",
-        type = int,
-        required = False,
-        help = "Target width for resized images/labels."
-    )
-    parser.add_argument(
-        "--target_height",
-        type = int,
-        required = False,
-        help = "Target height for resized images/labels."
     )
     parser.add_argument(
         "--show_statistic",
@@ -129,6 +114,21 @@ def make_ouput_dir(output_dir:str)->None:
             secondDir = os.path.join(firstDir, lopDir1)
             if not os.path.exists(secondDir):
                 os.makedirs(secondDir)
+    return
+
+
+def get_file_list(input_dir: str, label_file_list:List[str])->None:
+    imgs_list = []
+    for (parent, dirnames, filenames) in os.walk(input_dir,  followlinks=True):
+        for filename in filenames:
+            if filename.split('.')[-1] == 'jpg':
+                imgs_list.append( os.path.join(parent, filename.split('.')[0]) )
+    #print(imgs_list)
+    for (parent, dirnames, filenames) in os.walk(input_dir,  followlinks=True):
+        for filename in filenames:
+            if filename.split('.')[-1] == 'json':
+                if os.path.join(parent, filename.split('.')[0]) in imgs_list:
+                    label_file_list.append( os.path.join(parent, filename.split('.')[0]) )
     return
 
 
@@ -172,7 +172,7 @@ class DealDirFilesThread(threading.Thread):
                 sys.stdout.write('\r>> {}: Image file {} and label file {} not fit err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), img_file, label_file))
                 sys.stdout.flush()
                 os._exit(2)
-            deal_one_image_label_files(img_file, label_file, self.output_dir, i, self.output_size)
+            deal_one_image_label_files(img_file, label_file, self.output_dir, i)
         return
 
 
@@ -324,7 +324,6 @@ def deal_one_image_label_files(
         label_file:str, 
         output_dir:str, 
         deal_cnt:int, 
-        output_size:List[int], 
         obj_cnt_list
 )->None:
     save_image_dir = None
@@ -367,28 +366,28 @@ def deal_one_image_label_files(
 def deal_dir_files(
         loop_cnt:int,
         class_num, 
-        img_label_list:str, 
+        label_file_list:str, 
         output_dir:str, 
-        output_size:List[int], 
         obj_cnt_list
 )->None:
-    #print(img_label_list)
+    #print(label_file_list)
     train_fp = open(output_dir + "/train.txt", "a+")
     val_fp = open(output_dir + "/val.txt", "a+")
     for one_lop in range(loop_cnt):
         prYellow('Loop count{}'.format(one_lop))
-        pbar = enumerate(img_label_list)
-        pbar = tqdm(pbar, total=len(img_label_list), desc="Processing", colour='blue', bar_format=TQDM_BAR_FORMAT)
-        for (i, img_label) in pbar:
-            img_file = img_label[0]
-            label_file = img_label[1]
+        pbar = enumerate(label_file_list)
+        pbar = tqdm(pbar, total=len(label_file_list), desc="Processing", colour='blue', bar_format=TQDM_BAR_FORMAT)
+        for (i, label_file) in pbar:
+            img_file = label_file + '.jpg'
+            label_file = label_file + '.json'
+            #print(img_file, label_file)
             img_file_name, _ = os.path.splitext( os.path.split(img_file)[1] )
             label_file_name, _ = os.path.splitext( os.path.split(label_file)[1] )
             if img_file_name != label_file_name:
-                sys.stdout.write('\r>> {}: Image file {} and label file {} not fit err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), img_file, label_file))
+                prRed('Image file {} and label file {} not fit err!!!!\n'.format(img_file, label_file))
                 sys.stdout.flush()
                 os._exit(2)
-            deal_one_image_label_files(class_num, train_fp, val_fp, img_file, label_file, output_dir, i, output_size, obj_cnt_list)
+            deal_one_image_label_files(class_num, train_fp, val_fp, img_file, label_file, output_dir, i, obj_cnt_list)
     train_fp.close()
     val_fp.close()
     return
@@ -400,7 +399,7 @@ def show_statistic_info(input_dir:str, labels_list)->None:
     pbar = enumerate(labels_list)
     pbar = tqdm(pbar, total=len(labels_list), desc="Processing", colour='blue', bar_format=TQDM_BAR_FORMAT)
     for (i, label_file) in pbar:
-        with open(label_file, 'r') as load_f:
+        with open(label_file + '.json', 'r') as load_f:
             json_data = json.load(load_f)
             #json_data = json.load(load_f, encoding='utf-8')
             shapes_objs = json_data['shapes']
@@ -427,38 +426,17 @@ def main_func(args = None):
     """ Main function for data preparation. """
     signal.signal(signal.SIGINT, term_sig_handler)
     args = parse_args(args)
+    args.input_dir = os.path.abspath(args.input_dir)
+    prYellow('input_dir: {}'.format(args.input_dir))
     #------
-    imgs_list = []
-    labels_list = []
-    for root, dirs, files in os.walk(args.input_dir, followlinks=True):
-        for one_file in sorted(files):
-            #print(os.path.splitext(one_file)[-1])
-            if os.path.splitext(one_file)[-1] == '.json':
-                labels_list.append( os.path.join(root, one_file) )
-            else:
-                imgs_list.append( os.path.join(root, one_file) )
-    #print(len(imgs_list), len(labels_list))
-    if len(labels_list) != len(imgs_list):
-        sys.stdout.write('\r>> {}: File len {}:{} err!!!!\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), len(labels_list), len(imgs_list)))
-        sys.stdout.flush()
-        os._exit(2)
-    img_label_list = []
-    for i in range( len(imgs_list) ):
-        img_label = []
-        img_label.append(imgs_list[i])
-        img_label.append(labels_list[i])
-        img_label_list.append(img_label[:])
-    random.shuffle(img_label_list)
-    #print(len(img_label_list))
-    #------
+    label_file_list = []
+    get_file_list(args.input_dir, label_file_list)
     if args.show_statistic:
-        show_statistic_info(args.input_dir, labels_list)
+        show_statistic_info(args.input_dir, label_file_list)
         return
-    #------
     if (args.output_dir is None) or (args.class_num is None):
         prRed('Not input output_dir or class_num parameter, return')
         return
-    output_size = (args.target_width, args.target_height)
     args.output_dir = os.path.abspath(args.output_dir)
     prYellow('output_dir: {}'.format(args.output_dir))
     make_ouput_dir(args.output_dir)
@@ -472,7 +450,7 @@ def main_func(args = None):
         prRed('Class num {} err, return'.format(args.class_num))
         return
     obj_cnt_list = [ 0 for _ in range( len(categories_list) ) ]
-    deal_dir_files(args.loop_cnt, args.class_num, img_label_list, args.output_dir, output_size, obj_cnt_list)
+    deal_dir_files(args.loop_cnt, args.class_num, label_file_list, args.output_dir, obj_cnt_list)
     # print result
     print("\n")
     for category in categories_list:
@@ -482,7 +460,7 @@ def main_func(args = None):
         print("%10d " %(obj_cnt_list[i]), end='')
     print("%10d" %(sum(obj_cnt_list)))
     #print("\n")
-    sys.stdout.write('\r>> {}: Generate yolov dataset success, save dir:{}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), args.output_dir))
+    prYellow('Generate yolov dataset success, save dir:{}\n'.format(args.output_dir))
     sys.stdout.flush()
     return
 
