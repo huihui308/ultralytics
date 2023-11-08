@@ -1,39 +1,40 @@
 #
 #
 # cmd:
-#       rm -rf result/*;python3 v8_inference.py --input=/home/david/code/yolo/ONNX-YOLOv8-Object-Detection/doc/input/NO1_highway.mp4 --model_file=./v8n_best.pt --output_dir=./result --save_video --save_image
+#       $ rm -rf result/*;python3 v8_inference.py --input=./test.mp4 --model_file=/home/david/code/yolo/ultralytics/runs/detect/train/weights/best.pt --output_dir=./result --interval=0 --save_video --save_image
 #
 import cv2
 from tqdm import tqdm
-from ultralytics import YOLO
 import os, sys, math, shutil, random, datetime, signal, argparse
+
+sys.path.append('../../../')
+from ultralytics import YOLO
 
 
 TQDM_BAR_FORMAT = '{l_bar}{bar:40}| {n_fmt}/{total_fmt} {elapsed}'
 
 
-def prRed(skk): print("\033[91m {}\033[00m" .format(skk))
-def prGreen(skk): print("\033[92m {}\033[00m" .format(skk)) 
-def prYellow(skk): print("\033[93m {}\033[00m" .format(skk))
-def prLightPurple(skk): print("\033[94m {}\033[00m" .format(skk))
-def prPurple(skk): print("\033[95m {}\033[00m" .format(skk))
-def prCyan(skk): print("\033[96m {}\033[00m" .format(skk))
-def prLightGray(skk): print("\033[97m {}\033[00m" .format(skk)) 
-def prBlack(skk): print("\033[98m {}\033[00m" .format(skk))
+def prRed(skk): print("\033[91m \r>> {}: {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prGreen(skk): print("\033[92m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk)) 
+def prYellow(skk): print("\033[93m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prLightPurple(skk): print("\033[94m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prPurple(skk): print("\033[95m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prCyan(skk): print("\033[96m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
+def prLightGray(skk): print("\033[97m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk)) 
+def prBlack(skk): print("\033[98m \r>> {}:  {}\033[00m" .format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), skk))
 
 
 def term_sig_handler(signum, frame)->None:
-    sys.stdout.write('\r>> {}: \n\n\n***************************************\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
-    sys.stdout.write('\r>> {}: Catched singal: {}\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"), signum))
-    sys.stdout.write('\r>> {}: \n***************************************\n'.format(datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")))
+    prRed('\n\n\n***************************************\n')
+    prRed('catched singal: {}\n'.format(signum))
+    prRed('\n***************************************\n')
     sys.stdout.flush()
     os._exit(0)
-    return
 
 
 def parse_args(args = None):
     """ parse the arguments. """
-    parser = argparse.ArgumentParser(description = 'Prepare resized images/labels dataset for LPD')
+    parser = argparse.ArgumentParser(description = 'Inference files include video and image files')
     parser.add_argument(
         "--input",
         type = str,
@@ -66,18 +67,6 @@ def parse_args(args = None):
         required = False,
         default = 0.3,
         help = "Yolov8 iou_thres."
-    )
-    parser.add_argument(
-        "--target_width",
-        type = int,
-        required = False,
-        help = "Target width for resized images/labels."
-    )
-    parser.add_argument(
-        "--target_height",
-        type = int,
-        required = False,
-        help = "Target height for resized images/labels."
     )
     parser.add_argument(
         "--save_video",
@@ -162,7 +151,7 @@ def inference_video_file(
     #fourcc = cv2.VideoWriter_fourcc('I','4','2','0')
     # 不能中途停止运行程序，否则保存的.mp4文件无法播放
     # (保存为.avi格式的视频，中途停止运行程序，保存的视频可以正常播放
-    save_video_file = os.path.join(output_dir, file_path.split('/')[-1] + '_inference' + '.avi')
+    save_video_file = os.path.join(output_dir, file_path.split('/')[-1] + '_inference' + '.mp4')
     video_out = cv2.VideoWriter(save_video_file, fourcc, fps_val, video_size)
     # Loop through the video frames
     for _ in tqdm( range( int(frame_cnt) ) ):
@@ -232,7 +221,7 @@ def main_func(args = None):
     #------
     if os.path.isdir(args.input):
         #print("it's a directory")
-        for root, dirs, files in os.walk(args.input):
+        for (root, dirs, files) in os.walk(args.input):
             for lop_file in files:
                 deal_file = os.path.join(root, lop_file)
                 #print(deal_file)
