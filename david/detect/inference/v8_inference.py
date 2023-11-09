@@ -7,7 +7,7 @@ import cv2
 from tqdm import tqdm
 import os, sys, math, shutil, random, datetime, signal, argparse
 
-sys.path.append('../../../')
+#sys.path.append('../../../')
 from ultralytics import YOLO
 
 
@@ -115,7 +115,7 @@ def inference_img(
     #print(save_file)
     img = cv2.imread(input_file, 1)
     # Detect Objects
-    results = yolov8_detector(frame, conf=conf_thres, iou=iou_thres, verbose=show_infer_log)
+    results = yolov8_detector(img, conf=conf_thres, iou=iou_thres, verbose=show_infer_log)
     # Visualize the results on the frame
     annotated_frame = results[0].plot(line_width =3, font_size=6.0, masks=True)
     cv2.imwrite(save_file, annotated_frame)
@@ -222,7 +222,9 @@ def main_func(args = None):
     if os.path.isdir(args.input):
         #print("it's a directory")
         for (root, dirs, files) in os.walk(args.input):
-            for lop_file in files:
+            pbar = enumerate(files)
+            pbar = tqdm(pbar, total=len(files), desc="Processing", colour='blue', bar_format=TQDM_BAR_FORMAT)
+            for (i, lop_file) in pbar:
                 deal_file = os.path.join(root, lop_file)
                 #print(deal_file)
                 deal_input_file(yolov8_detector, deal_file, args.output_dir, args.interval, args.conf_thres, args.iou_thres, args.show_infer_log, args.save_video, args.save_image)
