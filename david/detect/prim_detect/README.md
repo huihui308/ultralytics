@@ -107,6 +107,13 @@ $ python3 generate_test_txt.py --input_dir=/home/david/dataset/detect/CBD/n2s_20
 
 
 # Train
+Copy train_x.py to ultralytics directoyr, rename train.py.
+```
+$ python3 train.py
+```
+
+or
+
 copy yolov8n.pt to project directory.
 ```
 $ cp runs/detect/obj_det_class11/weights/best.pt yolov8n.pt
