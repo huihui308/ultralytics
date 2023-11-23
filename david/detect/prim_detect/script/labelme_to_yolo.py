@@ -21,13 +21,23 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 #
-# python3 labelme_to_yolo.py --class_num=4 --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/echo_park --output_dir=/home/david/dataset/detect/yolo/all_class4
+# python3 labelme_to_yolo.py --class_num=4 --input_dir=/home/david/dataset/detect/echo_park --output_dir=/home/david/dataset/detect/yolo/all_class4
 # 
 # python3 labelme_to_yolo.py --input_dir=/home/david/dataset/detect/CBD --show_statistic=True
 #
 ################################################################################
 
-""" Script to prepare resized images/labels for primary detect. """
+""" 
+    Script to prepare resized images/labels for primary detect. 
+
+    classes7:
+        generate:
+        $ python3 labelme_to_yolo.py --class_num=7 --input_dir=/home/david/dataset/detect/echo_park --output_dir=/home/david/dataset/detect/yolov8/classes7
+
+        check:
+        $ python3 yolo_draw_image.py --class_num=7 --dataset_dir=/home/david/dataset/detect/yolov8/classes7
+
+"""
 
 from __future__ import absolute_import
 from __future__ import division
@@ -44,6 +54,7 @@ import os, sys, math, shutil, random, datetime, signal, argparse
 
 categories4_list = ['person', 'rider', 'tricycle', 'car']
 categories5_list = ['person', 'rider', 'tricycle', 'car', 'lg']
+categories7_list = ['person', 'rider', 'tricycle', 'car', 'R', 'G', 'Y']
 TQDM_BAR_FORMAT = '{l_bar}{bar:40}| {n_fmt}/{total_fmt} {elapsed}'
 
 
@@ -82,7 +93,7 @@ def parse_args(args = None):
         "--class_num",
         type = int,
         required = False,
-        help = "Class num. 4:{'person':'0', 'rider':'1', 'tricycle':'2', 'car':'3'}, 5:{'person':'0', 'rider':'1', 'tricycle':'2', 'car':'3', 'lg':'4'}, 6:{'person':'0', 'rider':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
+        help = "Class num. 4:{'person':'0', 'rider':'1', 'tricycle':'2', 'car':'3'}, 5:{'person':'0', 'rider':'1', 'tricycle':'2', 'car':'3', 'lg':'4'}, 6:{'person':'0', 'rider':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 7:{'person', 'rider', 'tricycle', 'car', 'R', 'G', 'Y'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
     )
     parser.add_argument(
         "--show_statistic",
@@ -316,6 +327,50 @@ def labelme2_class5_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_height
     return
 
 
+# 'person', 'rider', 'tricycle', 'car', 'R', 'G', 'Y'
+def labelme2_class7_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_height)->None:
+    """ Create Yolo dataset. """
+    type_str = None
+    if shape_obj['label'] in ('person'):
+        type_str = '0'
+        obj_cnt_list[0] += 1
+    elif shape_obj['label'] in ('bicycle', 'motorbike'):
+        type_str = '1'
+        obj_cnt_list[1] += 1
+    elif shape_obj['label'] in ('tricycle'):
+        type_str = '2'
+        obj_cnt_list[2] += 1
+    elif shape_obj['label'] in ('car', 'bus', 'truck'):
+        type_str = '3'
+        obj_cnt_list[3] += 1
+    elif shape_obj['label'] in ('R'):
+        type_str = '4'
+        obj_cnt_list[4] += 1
+    elif shape_obj['label'] in ('G'):
+        type_str = '5'
+        obj_cnt_list[5] += 1
+    elif shape_obj['label'] in ('Y'):
+        type_str = '6'
+        obj_cnt_list[6] += 1
+    elif shape_obj['label'] in ('plate', 'plate+', 'B'):
+        return
+    else:
+        prRed('Label {} not support, return'.format(shape_obj['label']))
+        return
+    one_point_list = shape_obj['points']
+    obj_width = float(one_point_list[1][0]) - float(one_point_list[0][0])
+    obj_height = float(one_point_list[1][1]) - float(one_point_list[0][1])
+    x_center = (float(one_point_list[0][0]) + obj_width/2)/img_width
+    y_center = (float(one_point_list[0][1]) + obj_height/2)/img_height
+    yolo_width = obj_width/img_width
+    yolo_height = obj_height/img_height
+    if (x_center <= 0.0) or (y_center <= 0.0) or (yolo_width <= 0.0) or (yolo_height <= 0.0):
+        prRed('Yolo pos {} {} {} {} err, return'.format(x_center, y_center, yolo_width, yolo_height))
+        return
+    fp.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(type_str, x_center, y_center, yolo_width, yolo_height))
+    return
+
+
 def deal_one_image_label_files(
         class_num, 
         train_fp, 
@@ -360,6 +415,8 @@ def deal_one_image_label_files(
                     labelme2_class4_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_height)
                 elif class_num == 5:
                     labelme2_class5_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_height)
+                elif class_num == 7:
+                    labelme2_class7_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_height)
     return
 
 
@@ -446,6 +503,8 @@ def main_func(args = None):
         categories_list = categories4_list
     elif args.class_num == 5:
         categories_list = categories5_list
+    elif args.class_num == 7:
+        categories_list = categories7_list
     else:
         prRed('Class num {} err, return'.format(args.class_num))
         return

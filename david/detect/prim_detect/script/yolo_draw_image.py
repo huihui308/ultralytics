@@ -81,7 +81,7 @@ def parse_args(args = None):
         "--class_num",
         type = int,
         required = True,
-        help = "Class num. 4:{'person':'0', 'rider':'1', 'car':'2', 'lg':'3'}, 6:{'person':'0', 'rider':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
+        help = "Class num. 4:{'person':'0', 'rider':'1', 'tricycle':'2', 'car':'3'}, 5:{'person':'0', 'rider':'1', 'tricycle':'2', 'car':'3', 'lg':'4'}, 6:{'person':'0', 'rider':'1', 'car':'2', 'R':'3', 'G':'4', 'Y':'5'}, 7:{'person', 'rider', 'tricycle', 'car', 'R', 'G', 'Y'}, 11:{'person':'0', 'bicycle':'1', 'motorbike':'2', 'tricycle':'3', 'car':'4', 'bus':'5', 'truck':'6', 'plate':'7', 'R':'8', 'G':'9', 'Y':'10'}"
     )
     parser.add_argument(
         "--parse_cnt",
@@ -118,6 +118,7 @@ def draw_rectangel_to_image(class_num, output_dir, img_file, label_file)->None:
     numClassDict4 = {'0':'person', '1':'rider', '2':'car', '3':'lg'}
     numClassDict5 = {'0':'person', '1':'rider', '2':'tricycle', '3':'car', '4':'lg'}
     numClassDict6 = {'0':'person', '1':'rider', '2':'car', '3':'R', '4':'G', '5':'Y'}
+    numClassDict7 = {'0':'person', '1':'rider', '2':'tricycle', '3':'car', '4':'R', '5':'G', '6':'Y'}
     numClassDict11 = {'0':'person', '1':'bicycle', '2':'motorbike', '3':'tricycle', '4':'car', '5':'bus', '6':'truck', '7':'plate', '8':'R', '9':'G', '10':'Y'}
     colourList = [(255, 0, 0), (0, 255, 0), (0, 0, 255), (255, 255, 0), (0, 255, 255), (100, 0, 255), (255, 100, 0), (80, 255, 0), (100, 100, 255), (255, 80, 0), (80, 255, 80)]
     for one_line in open(label_file):
@@ -130,6 +131,8 @@ def draw_rectangel_to_image(class_num, output_dir, img_file, label_file)->None:
             type_str = numClassDict5[valList[0]]
         elif class_num == 6:
             type_str = numClassDict6[valList[0]]
+        elif class_num == 7:
+            type_str = numClassDict7[valList[0]]
         elif class_num == 11:
             type_str = numClassDict11[valList[0]]
         xCenter = int(float(valList[1])*width)
@@ -161,23 +164,27 @@ def main_func(args = None):
     args.output_dir = os.path.abspath(args.output_dir)
     prYellow('Save data dir:{}'.format(args.output_dir))
     if not os.path.exists(args.output_dir):
-        prRed('Save data dir:{} not exist, exit'.format(args.output_dir))
-        os._exit(0)
-    lop_cnt = 0
-    for img_file in open(os.path.join(args.dataset_dir, 'train.txt'), "r"):
-        prGreen('Deal cnt: {}'.format(lop_cnt))
-        img_file = img_file.strip('\n')
-        if not os.path.isfile(img_file):
-            prRed('File {} not exist, continue'.format(img_file))
-            continue
-        label_file = get_label_file(img_file)
-        if not os.path.isfile(label_file):
-            prRed('File {} not exist, continue'.format(label_file))
-            continue
-        draw_rectangel_to_image(args.class_num, args.output_dir, img_file, label_file)
-        lop_cnt += 1
-        if lop_cnt == args.parse_cnt:
-            break
+        prRed('Save data dir:{} not exist, make it'.format(args.output_dir))
+        #os._exit(0)
+        os.mkdir(args.output_dir)
+    # draw images
+    random.seed(255)
+    txt_list = ['train.txt', 'val.txt']
+    for txt_file in txt_list:
+        with open(os.path.join(args.dataset_dir, txt_file), "r") as fp:
+            lines = fp.readlines()
+            #print(len(lines), type(lines))
+            for _ in range(args.parse_cnt):
+                img_file = lines[random.randint(0, len(lines))].strip('\n')
+                prGreen('Deal img_file: {}'.format(img_file))
+                if not os.path.isfile(img_file):
+                    prRed('File {} not exist, continue'.format(img_file))
+                    continue
+                label_file = get_label_file(img_file)
+                if not os.path.isfile(label_file):
+                    prRed('File {} not exist, continue'.format(label_file))
+                    continue
+                draw_rectangel_to_image(args.class_num, args.output_dir, img_file, label_file)
     return
 
 
