@@ -18,8 +18,8 @@ Example:
 """
 
 from .block import (C1, C2, C3, C3TR, DFL, SPP, SPPF, Bottleneck, BottleneckCSP, C2f, C3Ghost, C3x, GhostBottleneck,
-                    StemBlock, Shuffle_Block, DWConvblock, ADD, 
-                    HGBlock, HGStem, Proto, RepC3)
+                    StemBlock, Shuffle_Block, DWConvblock, ADD,
+                    HGBlock, HGStem, Proto, RepC3, ResNetLayer)
 from .conv import (CBAM, ChannelAttention, Concat, Conv, Conv2, ConvTranspose, DWConv, DWConvTranspose2d, Focus,
                    GhostConv, LightConv, RepConv, SpatialAttention)
 from .head import Classify, Detect, Pose, RTDETRDecoder, Segment
@@ -34,4 +34,4 @@ __all__ = ('Conv', 'Conv2', 'LightConv', 'RepConv', 'DWConv', 'DWConvTranspose2d
            'Segment', 'Pose', 'Classify', 'TransformerEncoderLayer', 'RepC3', 'RTDETRDecoder', 'AIFI',
            'StemBlock', 'Shuffle_Block', 'DWConvblock', 'ADD', 
            'BiLevelRoutingAttention', 'CSPStage',
-           'DeformableTransformerDecoder', 'DeformableTransformerDecoderLayer', 'MSDeformAttn', 'MLP')
+           'DeformableTransformerDecoder', 'DeformableTransformerDecoderLayer', 'MSDeformAttn', 'MLP', 'ResNetLayer')

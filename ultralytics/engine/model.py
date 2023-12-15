@@ -102,7 +102,7 @@ class Model(nn.Module):
         """Is model a Triton Server URL string, i.e. <scheme>://<netloc>/<endpoint>/<task_name>"""
         from urllib.parse import urlsplit
         url = urlsplit(model)
-        return url.netloc and url.path and url.scheme in {'http', 'grfc'}
+        return url.netloc and url.path and url.scheme in {'http', 'grpc'}
 
     @staticmethod
     def is_hub_model(model):
@@ -325,7 +325,7 @@ class Model(nn.Module):
         checks.check_pip_update_available()
 
         overrides = yaml_load(checks.check_yaml(kwargs['cfg'])) if kwargs.get('cfg') else self.overrides
-        custom = {'data': TASK2DATA[self.task]}  # method defaults
+        custom = {'data': DEFAULT_CFG_DICT['data'] or TASK2DATA[self.task]}  # method defaults
         args = {**overrides, **custom, **kwargs, 'mode': 'train'}  # highest priority args on the right
         if args.get('resume'):
             args['resume'] = self.ckpt_path
