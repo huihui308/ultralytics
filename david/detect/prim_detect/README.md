@@ -119,6 +119,12 @@ copy yolov8n.pt to project directory.
 $ cp runs/detect/obj_det_class11/weights/best.pt yolov8n.pt
 ```
 
+
+## BGF
+```
+$ python3 david/detect/prim_detect/train/train_bgf.py
+```
+
 ## class4
 ```
 $ yolo task=detect mode=train model=david/object_detect/model/cuiwei.pt data=david/object_detect/data/det_data_class4.yaml epochs=300 batch=32 device=0 workers=56 resume=False name=obj_det_class4
