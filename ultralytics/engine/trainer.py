@@ -207,6 +207,7 @@ class BaseTrainer:
         # Model
         self.run_callbacks('on_pretrain_routine_start')
         ckpt = self.setup_model()
+        LOGGER.info('The model is:\n{}'.format(self.model))
         self.model = self.model.to(self.device)
         self.set_model_attributes()
 
