@@ -13,7 +13,7 @@ Monitoring workouts through pose estimation with [Ultralytics YOLOv8](https://gi
 - **Optimized Performance:** Tailoring workouts based on monitoring data for better results.
 - **Goal Achievement:** Track and adjust fitness goals for measurable progress.
 - **Personalization:** Customized workout plans based on individual data for effectiveness.
-- **Health Awareness:** Early detection of patterns indicating health issues or overtraining.
+- **Health Awareness:** Early detection of patterns indicating health issues or over-training.
 - **Informed Decisions:** Data-driven decisions for adjusting routines and setting realistic goals.
 
 ## Real World Applications
@@ -26,6 +26,7 @@ Monitoring workouts through pose estimation with [Ultralytics YOLOv8](https://gi
 !!! Example "Workouts Monitoring Example"
 
     === "Workouts Monitoring"
+
         ```python
         from ultralytics import YOLO
         from ultralytics.solutions import ai_gym
@@ -34,6 +35,7 @@ Monitoring workouts through pose estimation with [Ultralytics YOLOv8](https://gi
         model = YOLO("yolov8n-pose.pt")
         cap = cv2.VideoCapture("path/to/video/file.mp4")
         assert cap.isOpened(), "Error reading video file"
+        w, h, fps = (int(cap.get(x)) for x in (cv2.CAP_PROP_FRAME_WIDTH, cv2.CAP_PROP_FRAME_HEIGHT, cv2.CAP_PROP_FPS))
 
         gym_object = ai_gym.AIGym()  # init AI GYM module
         gym_object.set_args(line_thickness=2,
@@ -45,13 +47,18 @@ Monitoring workouts through pose estimation with [Ultralytics YOLOv8](https://gi
         while cap.isOpened():
             success, im0 = cap.read()
             if not success:
-                exit(0)
+              print("Video frame is empty or video processing has been successfully completed.")
+              break
             frame_count += 1
-            results = model.predict(im0, verbose=False)
+            results = model.track(im0, verbose=False)  # Tracking recommended
+            #results = model.predict(im0)  # Prediction also supported
             im0 = gym_object.start_counting(im0, results, frame_count)
+
+        cv2.destroyAllWindows()
         ```
 
     === "Workouts Monitoring with Save Output"
+
         ```python
         from ultralytics import YOLO
         from ultralytics.solutions import ai_gym
@@ -60,11 +67,12 @@ Monitoring workouts through pose estimation with [Ultralytics YOLOv8](https://gi
         model = YOLO("yolov8n-pose.pt")
         cap = cv2.VideoCapture("path/to/video/file.mp4")
         assert cap.isOpened(), "Error reading video file"
+        w, h, fps = (int(cap.get(x)) for x in (cv2.CAP_PROP_FRAME_WIDTH, cv2.CAP_PROP_FRAME_HEIGHT, cv2.CAP_PROP_FPS))
 
         video_writer = cv2.VideoWriter("workouts.avi",
-                                       cv2.VideoWriter_fourcc(*'mp4v'),
-                                       int(cap.get(5)),
-                                       (int(cap.get(3)), int(cap.get(4))))
+                                        cv2.VideoWriter_fourcc(*'mp4v'),
+                                        fps,
+                                        (w, h))
 
         gym_object = ai_gym.AIGym()  # init AI GYM module
         gym_object.set_args(line_thickness=2,
@@ -76,12 +84,15 @@ Monitoring workouts through pose estimation with [Ultralytics YOLOv8](https://gi
         while cap.isOpened():
             success, im0 = cap.read()
             if not success:
-                exit(0)
+              print("Video frame is empty or video processing has been successfully completed.")
+              break
             frame_count += 1
-            results = model.predict(im0, verbose=False)
+            results = model.track(im0, verbose=False)  # Tracking recommended
+            #results = model.predict(im0)  # Prediction also supported
             im0 = gym_object.start_counting(im0, results, frame_count)
             video_writer.write(im0)
 
+        cv2.destroyAllWindows()
         video_writer.release()
         ```
 
@@ -95,14 +106,14 @@ Monitoring workouts through pose estimation with [Ultralytics YOLOv8](https://gi
 
 ### Arguments `set_args`
 
-| Name            | Type   | Default  | Description                                                                            |
-|-----------------|--------|----------|----------------------------------------------------------------------------------------|
-| kpts_to_check   | `list` | `None`   | List of three keypoints index, for counting specific workout, followed by keypoint Map |
-| view_img        | `bool` | `False`  | Display the frame with counts                                                          |
-| line_thickness  | `int`  | `2`      | Increase the thickness of count value                                                  |
-| pose_type       | `str`  | `pushup` | Pose that need to be monitored, "pullup" and "abworkout" also supported                |
-| pose_up_angle   | `int`  | `145`    | Pose Up Angle value                                                                    |
-| pose_down_angle | `int`  | `90`     | Pose Down Angle value                                                                  |
+| Name              | Type   | Default  | Description                                                                            |
+|-------------------|--------|----------|----------------------------------------------------------------------------------------|
+| `kpts_to_check`   | `list` | `None`   | List of three keypoints index, for counting specific workout, followed by keypoint Map |
+| `view_img`        | `bool` | `False`  | Display the frame with counts                                                          |
+| `line_thickness`  | `int`  | `2`      | Increase the thickness of count value                                                  |
+| `pose_type`       | `str`  | `pushup` | Pose that need to be monitored, `pullup` and `abworkout` also supported                |
+| `pose_up_angle`   | `int`  | `145`    | Pose Up Angle value                                                                    |
+| `pose_down_angle` | `int`  | `90`     | Pose Down Angle value                                                                  |
 
 ### Arguments `model.predict`
 
@@ -120,5 +131,18 @@ Monitoring workouts through pose estimation with [Ultralytics YOLOv8](https://gi
 | `visualize`     | `bool`         | `False`                | visualize model features                                                   |
 | `augment`       | `bool`         | `False`                | apply image augmentation to prediction sources                             |
 | `agnostic_nms`  | `bool`         | `False`                | class-agnostic NMS                                                         |
+| `classes`       | `list[int]`    | `None`                 | filter results by class, i.e. classes=0, or classes=[0,2,3]                |
 | `retina_masks`  | `bool`         | `False`                | use high-resolution segmentation masks                                     |
-| `classes`       | `None or list` | `None`                 | filter results by class, i.e. classes=0, or classes=[0,2,3]                |
+| `embed`         | `list[int]`    | `None`                 | return feature vectors/embeddings from given layers                        |
+
+### Arguments `model.track`
+
+| Name      | Type    | Default        | Description                                                 |
+|-----------|---------|----------------|-------------------------------------------------------------|
+| `source`  | `im0`   | `None`         | source directory for images or videos                       |
+| `persist` | `bool`  | `False`        | persisting tracks between frames                            |
+| `tracker` | `str`   | `botsort.yaml` | Tracking method 'bytetrack' or 'botsort'                    |
+| `conf`    | `float` | `0.3`          | Confidence Threshold                                        |
+| `iou`     | `float` | `0.5`          | IOU Threshold                                               |
+| `classes` | `list`  | `None`         | filter results by class, i.e. classes=0, or classes=[0,2,3] |
+| `verbose` | `bool`  | `True`         | Display the object tracking results                         |
