@@ -2,7 +2,7 @@ from ultralytics import RTDETR
 
 # Load a COCO-pretrained RT-DETR-l model
 #model = RTDETR('rtdetr-l.pt')
-model = RTDETR('ultralytics/cfg/models/rt-detr/rtdetr-n.yaml')
+model = RTDETR('ultralytics/cfg/models/rt-detr/rtdetr-resnet18.yaml')
 
 # Display model information (optional)
 model.info()

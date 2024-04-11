@@ -382,6 +382,8 @@ class RTDETRDecoder(nn.Module):
 
     def _generate_anchors(self, shapes, grid_size=0.05, dtype=torch.float32, device="cpu", eps=1e-2):
         """Generates anchor bounding boxes for given shapes with specific grid size and validates them."""
+        # 在给定shapes的情况下，_generate_anchors函数用于生成锚框（anchor bounding boxes）
+        # 并对其进行验证。其中，valid_mask是一个布尔掩码，用于标记哪些锚框是有效的
         anchors = []
         for i, (h, w) in enumerate(shapes):
             sy = torch.arange(end=h, dtype=dtype, device=device)
@@ -395,7 +397,10 @@ class RTDETRDecoder(nn.Module):
             anchors.append(torch.cat([grid_xy, wh], -1).view(-1, h * w, 4))  # (1, h*w, 4)
 
         anchors = torch.cat(anchors, 1)  # (1, h*w*nl, 4)
+        # 限制每个anchor内的值都在[0.01-0.99]之间，在这个区间之外的值设为无效，后面通过masked_fill设为'inf'
         valid_mask = ((anchors > eps) & (anchors < 1 - eps)).all(-1, keepdim=True)  # 1, h*w*nl, 1
+        # 将锚框的坐标值进行对数变换，并使用 masked_fill 函数将无效的锚框的值设置为正无穷（float('inf')）。
+        # 这样做是为了在后续处理中过滤掉无效的锚框。
         anchors = torch.log(anchors / (1 - anchors))
         anchors = anchors.masked_fill(~valid_mask, float("inf"))
         return anchors, valid_mask
@@ -418,42 +423,46 @@ class RTDETRDecoder(nn.Module):
         feats = torch.cat(feats, 1)
         return feats, shapes
 
+    """ 这里还用到了DINO中的 Mixed Query Selection 策略，也就是从最后一个编码器层中选择前K个编码器特征作为先验，以增强解码器查询。"""
     def _get_decoder_input(self, feats, shapes, dn_embed=None, dn_bbox=None):
         """Generates and prepares the input required for the decoder from the provided features and shapes."""
         bs = feats.shape[0]
         # Prepare input for decoder
         anchors, valid_mask = self._generate_anchors(shapes, dtype=feats.dtype, device=feats.device)
-        features = self.enc_output(valid_mask * feats)  # bs, h*w, 256
+        features = self.enc_output(valid_mask * feats)  # bs, h*w, 256  # 有效区域的特征经过Linear(256,256)
 
-        enc_outputs_scores = self.enc_score_head(features)  # (bs, h*w, nc)
+        enc_outputs_scores = self.enc_score_head(features)  # (bs, h*w, nc) # 有效区域的特征经过Linear(256,80)得到各类别分类得分
 
         # Query selection
-        # (bs, num_queries)
+        # (bs, num_queries)  # 在 enc_outputs_scores 最后一维中取得分最大的值，并用topk取排在前300的值的索引
         topk_ind = torch.topk(enc_outputs_scores.max(-1).values, self.num_queries, dim=1).indices.view(-1)
         # (bs, num_queries)
         batch_ind = torch.arange(end=bs, dtype=topk_ind.dtype).unsqueeze(-1).repeat(1, self.num_queries).view(-1)
 
-        # (bs, num_queries, 256)
+        # (bs, num_queries, 256) # 根据 batch 和 topk 的索引在有效 features 中得到 top_k_features
         top_k_features = features[batch_ind, topk_ind].view(bs, self.num_queries, -1)
-        # (bs, num_queries, 4)
+        # (bs, num_queries, 4)  #根据topk的索引在有效anchors中得到top_k_anchors
         top_k_anchors = anchors[:, topk_ind].view(bs, self.num_queries, -1)
 
-        # Dynamic anchors + static content
+        # Dynamic anchors + static content  # 前300的特征经过3个Linear [N 300 256]—>[N 300 4]再加上top_k_anchors得到 refer_bbox
         refer_bbox = self.enc_bbox_head(top_k_features) + top_k_anchors
 
         enc_bboxes = refer_bbox.sigmoid()
         if dn_bbox is not None:
-            refer_bbox = torch.cat([dn_bbox, refer_bbox], 1)
-        enc_scores = enc_outputs_scores[batch_ind, topk_ind].view(bs, self.num_queries, -1)
-
+            refer_bbox = torch.cat([dn_bbox, refer_bbox], 1)  # 带有噪声的去噪组 bbox 和 refer_bbox cat在一起
+        enc_scores = enc_outputs_scores[batch_ind, topk_ind].view(bs, self.num_queries, -1)# 根据batch和topk的索引在enc_outputs_scores中得到enc_scores
+        # 默认 embeddings=top_k_features
         embeddings = self.tgt_embed.weight.unsqueeze(0).repeat(bs, 1, 1) if self.learnt_init_query else top_k_features
         if self.training:
             refer_bbox = refer_bbox.detach()
             if not self.learnt_init_query:
                 embeddings = embeddings.detach()
         if dn_embed is not None:
-            embeddings = torch.cat([dn_embed, embeddings], 1)
-
+            embeddings = torch.cat([dn_embed, embeddings], 1) # 带有噪声的去噪组dn_embed和embeddings cat在一起
+        # embeddings: [N, num_queries+dn_dim, 256] 有效区域内选出的top300的特征和去噪组的特征合并
+        # refer_bbox: [N, num_queries+dn_dim, 4] 有效区域内选出的top300的特征经过Linear得到的bbox + top_k_anchors 与去噪组的bbox合并
+        # enc_bboxes: [N, num_queries, 4]  有效区域内选出的top300的特征经过Linear得到的bbox + top_k_anchors 再进行sigmoid
+        # enc_scores: [N, num_queries, 80]  根据batch和topk的索引在 enc_outputs_scores 中得到 enc_scores
         return embeddings, refer_bbox, enc_bboxes, enc_scores
 
     # TODO

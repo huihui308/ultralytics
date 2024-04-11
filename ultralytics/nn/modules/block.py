@@ -36,6 +36,7 @@ __all__ = (
     "SPPELAN",
     "CBFuse",
     "CBLinear",
+    "StemBlock", "Shuffle_Block", "DWConvblock", "ADD",
     "Silence",
 )
 
@@ -208,7 +209,6 @@ class Proto(nn.Module):
 class HGStem(nn.Module):
     """
     StemBlock of PPHGNetV2 with 5 convolutions and one maxpool2d.
-
     https://github.com/PaddlePaddle/PaddleDetection/blob/develop/ppdet/modeling/backbones/hgnet_v2.py
     """
 
@@ -224,15 +224,15 @@ class HGStem(nn.Module):
 
     def forward(self, x):
         """Forward pass of a PPHGNetV2 backbone layer."""
-        x = self.stem1(x)
-        x = F.pad(x, [0, 1, 0, 1])
-        x2 = self.stem2a(x)
-        x2 = F.pad(x2, [0, 1, 0, 1])
-        x2 = self.stem2b(x2)
-        x1 = self.pool(x)
+        x = self.stem1(x)  # [N 3 640 640] 下采样 [N 32 320 320]
+        x = F.pad(x, [0, 1, 0, 1]) # 在图像右侧和下侧pad 1 [N 32 321 321]
+        x2 = self.stem2a(x)  # 2*2的卷积 [N 16 320 320]
+        x2 = F.pad(x2, [0, 1, 0, 1]) # 在图像右侧和下侧pad 1 [N 16 321 321]
+        x2 = self.stem2b(x2)  # 2*2的卷积 [N 32 320 320]
+        x1 = self.pool(x)  # [N 32 321 321]->[N 32 320 320]
         x = torch.cat([x1, x2], dim=1)
-        x = self.stem3(x)
-        x = self.stem4(x)
+        x = self.stem3(x)  # [N 64 320 320] 下采样 [N 32 160 160]
+        x = self.stem4(x)  # [N 32 160 160] 升维 [N 48 160 160]
         return x
 
 
@@ -254,10 +254,10 @@ class HGBlock(nn.Module):
 
     def forward(self, x):
         """Forward pass of a PPHGNetV2 backbone layer."""
-        y = [x]
-        y.extend(m(y[-1]) for m in self.m)
-        y = self.ec(self.sc(torch.cat(y, 1)))
-        return y + x if self.add else y
+        y = [x] # [[N C H W]]
+        y.extend(m(y[-1]) for m in self.m) # [x]分别经过六次CONV 其中lightconv为True时为DWConv
+        y = self.ec(self.sc(torch.cat(y, 1)))  # sc和ec都是1*1的卷积
+        return y + x if self.add else y  # 是否使用shortcut
 
 
 class SPP(nn.Module):

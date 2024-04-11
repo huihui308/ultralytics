@@ -47,6 +47,7 @@ from .block import (
     CBFuse,
     CBLinear,
     Silence,
+    StemBlock, Shuffle_Block, DWConvblock, ADD,
 )
 from .conv import (
     CBAM,
@@ -75,6 +76,10 @@ from .transformer import (
     TransformerBlock,
     TransformerEncoderLayer,
     TransformerLayer,
+)
+from .bi_former import (
+    CSPStage,
+    BiLevelRoutingAttention,
 )
 
 __all__ = (
@@ -135,5 +140,7 @@ __all__ = (
     "SPPELAN",
     "CBFuse",
     "CBLinear",
+    "StemBlock", "Shuffle_Block", "DWConvblock", "ADD",
+    "CSPStage", "BiLevelRoutingAttention",
     "Silence",
 )
