@@ -21,7 +21,9 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
 # DEALINGS IN THE SOFTWARE.
 #
-# rm -rf ./test_output_class5;python3 UA-DETRAC_to_yolo_class5.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/UA-DETRAC --output_dir=./test_output_class5
+# rm -rf ./test_output_class5;python3 UA-DETRAC_to_yolo.py --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/detect/UA-DETRAC --output_dir=./test_output_class5
+
+# rm -rf ./test_output_class11;python3 UA-DETRAC_to_yolo.py --class_num=11 --target_width=1920 --target_height=1080 --input_dir=/home/david/dataset/class11-UA-DETRAC/UA-DETRAC --output_dir=/home/david/dataset/class11-UA-DETRAC
 #
 ################################################################################
 
@@ -42,6 +44,8 @@ import os, sys, math, shutil, random, datetime, signal, argparse
 
 categories4_list = ['person', 'rider', 'tricycle', 'car']
 categories5_list = ['person', 'rider', 'tricycle', 'car', 'lg']
+categories7_list = ['person', 'rider', 'tricycle', 'car', 'R', 'G', 'Y']
+categories11_list = ['person', 'bicycle', 'motor', 'tricycle', 'car', 'bus', 'truck', 'plate', 'R', 'G', 'Y']
 TQDM_BAR_FORMAT = '{l_bar}{bar:40}| {n_fmt}/{total_fmt} {elapsed}'
 
 
@@ -126,13 +130,26 @@ def uadetrac2_class_yolo_data(fp, one_target, obj_cnt_list, img_width, img_heigh
     obj_height = float( box_attr.getAttribute('height') )
     type_attr = one_target.getElementsByTagName('attribute')[0]
     vehicle_type = type_attr.getAttribute('vehicle_type')
-    #print(left, top, width, height, vehicle_type)
-    if vehicle_type in ('car', 'van', 'bus'):
-        type_str = '3'
-        obj_cnt_list[3] += 1
+    #print(obj_left, obj_top, obj_width, obj_height, vehicle_type)
+    if (len(obj_cnt_list) == 4) or (len(obj_cnt_list) == 5) or (len(obj_cnt_list) == 7):
+        if vehicle_type in ('car', 'van', 'bus'):
+            type_str = '3'
+            obj_cnt_list[3] += 1
+        else:
+            #prRed('vehicle_type \'{}\' err'.format(vehicle_type))
+            return
+    elif len(obj_cnt_list) == 11:
+        if vehicle_type in ('car', 'van'):
+            type_str = '4'
+            obj_cnt_list[4] += 1
+        elif vehicle_type in ('bus'):
+            type_str = '5'
+            obj_cnt_list[5] += 1
+        else:
+            #prRed('vehicle_type \'{}\' err'.format(vehicle_type))
+            return
     else:
-        #prRed('vehicle_type \'{}\' err'.format(vehicle_type))
-        return
+        prRed('len(obj_cnt_list): {}'.format(len(obj_cnt_list)))
     x_center = (obj_left + obj_width/2)/img_width
     y_center = (obj_top + obj_height/2)/img_height
     yolo_width = obj_width/img_width
@@ -182,8 +199,7 @@ def deal_one_image_label_files(
     #------
     with open(os.path.join(save_label_dir, save_file_name + ".txt"), "w") as fp:
         for one_target in targets:
-            if (class_num == 4) or (class_num == 5):
-                uadetrac2_class_yolo_data(fp, one_target, obj_cnt_list, img_width, img_height)
+            uadetrac2_class_yolo_data(fp, one_target, obj_cnt_list, img_width, img_height)
     return
 
 
@@ -248,6 +264,10 @@ def main_func(args = None):
         categories_list = categories4_list
     elif args.class_num == 5:
         categories_list = categories5_list
+    elif args.class_num == 7:
+        categories_list = categories7_list
+    elif args.class_num == 11:
+        categories_list = categories11_list
     else:
         prRed('Class num {} err, return'.format(args.class_num))
         return
