@@ -33,6 +33,7 @@
     classes7:
         generate:
         $ python3 labelme_to_yolo.py --class_num=7 --input_dir=/home/david/dataset/detect/echo_park --output_dir=/home/david/dataset/detect/yolov8/classes7
+        $ python3 labelme_to_yolo.py --class_num=11 --input_dir=/home/david/dataset/detect/echo_park --output_dir=/home/david/dataset/detect/yolov8/classes11
 
         check:
         $ python3 yolo_draw_image.py --class_num=7 --dataset_dir=/home/david/dataset/detect/yolov8/classes7
@@ -55,6 +56,7 @@ import os, sys, math, shutil, random, datetime, signal, argparse
 categories4_list = ['person', 'rider', 'tricycle', 'car']
 categories5_list = ['person', 'rider', 'tricycle', 'car', 'lg']
 categories7_list = ['person', 'rider', 'tricycle', 'car', 'R', 'G', 'Y']
+categories11_list = ['person', 'bicycle', 'motor', 'tricycle', 'car', 'bus', 'truck', 'plate', 'R', 'G', 'Y']
 TQDM_BAR_FORMAT = '{l_bar}{bar:40}| {n_fmt}/{total_fmt} {elapsed}'
 
 
@@ -371,6 +373,61 @@ def labelme2_class7_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_height
     return
 
 
+# 'person', 'bicycle', 'motor', 'tricycle', 'car', 'bus', 'truck', 'plate', 'R', 'G', 'Y'
+def labelme2_class11_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_height)->None:
+    """ Create Yolo dataset. """
+    type_str = None
+    if shape_obj['label'] in ('person'):
+        type_str = '0'
+        obj_cnt_list[0] += 1
+    elif shape_obj['label'] in ('bicycle'):
+        type_str = '1'
+        obj_cnt_list[1] += 1
+    elif shape_obj['label'] in ('motorbike'):
+        type_str = '2'
+        obj_cnt_list[2] += 1
+    elif shape_obj['label'] in ('tricycle'):
+        type_str = '3'
+        obj_cnt_list[3] += 1
+    elif shape_obj['label'] in ('car'):
+        type_str = '4'
+        obj_cnt_list[4] += 1
+    elif shape_obj['label'] in ('bus'):
+        type_str = '5'
+        obj_cnt_list[5] += 1
+    elif shape_obj['label'] in ('truck'):
+        type_str = '6'
+        obj_cnt_list[6] += 1
+    elif shape_obj['label'] in ('plate', 'plate+'):
+    #elif shape_obj['label'] in ('plate', 'plate+', 'B'):
+        type_str = '7'
+        obj_cnt_list[7] += 1
+    elif shape_obj['label'] in ('R'):
+        type_str = '8'
+        obj_cnt_list[8] += 1
+    elif shape_obj['label'] in ('G'):
+        type_str = '9'
+        obj_cnt_list[9] += 1
+    elif shape_obj['label'] in ('Y'):
+        type_str = '10'
+        obj_cnt_list[10] += 1
+    else:
+        prRed('Label {} not support, return'.format(shape_obj['label']))
+        return
+    one_point_list = shape_obj['points']
+    obj_width = float(one_point_list[1][0]) - float(one_point_list[0][0])
+    obj_height = float(one_point_list[1][1]) - float(one_point_list[0][1])
+    x_center = (float(one_point_list[0][0]) + obj_width/2)/img_width
+    y_center = (float(one_point_list[0][1]) + obj_height/2)/img_height
+    yolo_width = obj_width/img_width
+    yolo_height = obj_height/img_height
+    if (x_center <= 0.0) or (y_center <= 0.0) or (yolo_width <= 0.0) or (yolo_height <= 0.0):
+        prRed('Yolo pos {} {} {} {} err, return'.format(x_center, y_center, yolo_width, yolo_height))
+        return
+    fp.write("{} {:.12f} {:.12f} {:.12f} {:.12f}\n".format(type_str, x_center, y_center, yolo_width, yolo_height))
+    return
+
+
 def deal_one_image_label_files(
         class_num, 
         train_fp, 
@@ -417,6 +474,8 @@ def deal_one_image_label_files(
                     labelme2_class5_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_height)
                 elif class_num == 7:
                     labelme2_class7_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_height)
+                elif class_num == 11:
+                    labelme2_class11_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_height)
     return
 
 
@@ -505,6 +564,8 @@ def main_func(args = None):
         categories_list = categories5_list
     elif args.class_num == 7:
         categories_list = categories7_list
+    elif args.class_num == 11:
+        categories_list = categories11_list
     else:
         prRed('Class num {} err, return'.format(args.class_num))
         return
