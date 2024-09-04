@@ -402,13 +402,13 @@ def labelme2_class11_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_heigh
     #elif shape_obj['label'] in ('plate', 'plate+', 'B'):
         type_str = '7'
         obj_cnt_list[7] += 1
-    elif shape_obj['label'] in ('R'):
+    elif shape_obj['label'] in ('R', 'red'):
         type_str = '8'
         obj_cnt_list[8] += 1
-    elif shape_obj['label'] in ('G'):
+    elif shape_obj['label'] in ('G', 'green'):
         type_str = '9'
         obj_cnt_list[9] += 1
-    elif shape_obj['label'] in ('Y'):
+    elif shape_obj['label'] in ('Y', 'yellow'):
         type_str = '10'
         obj_cnt_list[10] += 1
     else:

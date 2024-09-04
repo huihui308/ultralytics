@@ -22,6 +22,9 @@
 # DEALINGS IN THE SOFTWARE.
 #
 # $ python3 yolo_draw_image.py --class_num=5 --dataset_dir=./
+# $ python3 yolo_draw_image.py --class_num=7 --dataset_dir=/home/david/dataset/detect/yolov8/classes7
+# $ python3 yolo_draw_image.py --class_num=11 --dataset_dir=/home/david/dataset/detect/yolov8/classes7
+# The default output directory is current ./output
 #
 ################################################################################
 
