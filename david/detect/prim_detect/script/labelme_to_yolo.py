@@ -273,7 +273,7 @@ def labelme2_class4_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_height
     elif shape_obj['label'] in ('car', 'bus', 'truck'):
         type_str = '3'
         obj_cnt_list[3] += 1
-    elif shape_obj['label'] in ('plate', 'plate+', 'R', 'G', 'Y', 'B'):
+    elif shape_obj['label'] in ('plate', 'plate+', 'R', 'G', 'Y', 'B', 'black'):
         return
     else:
         prRed('Label {} not support, return'.format(shape_obj['label']))
@@ -310,7 +310,7 @@ def labelme2_class5_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_height
     elif shape_obj['label'] in ('R', 'G', 'Y', 'B'):
         type_str = '4'
         obj_cnt_list[4] += 1
-    elif shape_obj['label'] in ('plate', 'plate+'):
+    elif shape_obj['label'] in ('plate', 'plate+', 'B', 'black'):
         return
     else:
         prRed('Label {} not support, return'.format(shape_obj['label']))
@@ -354,7 +354,7 @@ def labelme2_class7_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_height
     elif shape_obj['label'] in ('Y'):
         type_str = '6'
         obj_cnt_list[6] += 1
-    elif shape_obj['label'] in ('plate', 'plate+', 'B'):
+    elif shape_obj['label'] in ('plate', 'plate+', 'B', 'black'):
         return
     else:
         prRed('Label {} not support, return'.format(shape_obj['label']))
@@ -411,6 +411,8 @@ def labelme2_class11_yolo_data(fp, shape_obj, obj_cnt_list, img_width, img_heigh
     elif shape_obj['label'] in ('Y', 'yellow'):
         type_str = '10'
         obj_cnt_list[10] += 1
+    elif shape_obj['label'] in ('B', 'black'):
+        return
     else:
         prRed('Label {} not support, return'.format(shape_obj['label']))
         return
