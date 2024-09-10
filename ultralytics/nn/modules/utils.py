@@ -50,7 +50,6 @@ def multi_scale_deformable_attn_pytorch(
 
     https://github.com/IDEA-Research/detrex/blob/main/detrex/layers/multi_scale_deform_attn.py
     """
-
     bs, _, num_heads, embed_dims = value.shape
     _, num_queries, num_heads, num_levels, num_points, _ = sampling_locations.shape
     # 在第一个维度上进行拆分成list：其中每个元素shape：[b, hw, num_heads, embed_dims//num_heads]
