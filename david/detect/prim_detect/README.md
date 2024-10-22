@@ -1,4 +1,9 @@
 
+# See results on web
+```
+$ tensorboard --logdir /mnt/hud7300G/david/code/ultralytics/runs/detect/train --bind_all
+```
+
 # classes labels
 class4: 'person', 'rider', 'car', 'lg'
 class5: 'person', 'rider', 'tricycle', 'car', 'lg'
