@@ -147,18 +147,6 @@ class HungarianMatcher(nn.Module):
     #     return C
 
 
-"""
-    加入噪声后，还需要注意的一点便是信息之间的是否可见问题，噪声 queries 是会和匈牙利匹配任务的 queries 拼接起来一起送入 transformer中的。在 transformer 中，它们会经过 attention 交互，这势必会得知一些信息，这是作弊行为，是绝对不允许的
-    一、首先，如上所述，匈牙利匹配任务的 queries 肯定不能看到 DN 任务的 queries。
-    二、其次，不同 dn group 的 queries 也不能相互看到。因为综合所有组来看，gt -> query 是 one-to-many 的，每个 gt 在
-    每组都会有 1 个 query 拥有自己的信息。于是，对于每个 query 来说，在其它各组中都势必存在 1 个 query 拥有自己负责预测的那个 gt 的信息。
-    三、接着，同一个 dn group 的 queries 是可以相互看的 。因为在每组内，gt -> query 是 one-to-one 的关系，对于每个 query 来说，其它 queries 都不会有自己 gt 的信息。
-    四、最后，DN 任务的 queries 可以去看匈牙利匹配任务的 queries ，因为只有前者才拥有 gt 信息，而后者是“凭空构造”的（主要是先验，需要自己去学习）。
-    总的来说，attention mask 的设计归纳为：
-        1、匈牙利匹配任务的 queries 不能看到 DN任务的 queries；
-        2、DN 任务中，不同组的 queries 不能相互看到；
-        3、其它情况均可见
-"""
 def get_cdn_group(
     batch, num_classes, num_queries, class_embed, num_dn=100, cls_noise_ratio=0.5, box_noise_scale=1.0, training=False
 ):
@@ -166,6 +154,7 @@ def get_cdn_group(
     Get contrastive denoising training group. This function creates a contrastive denoising training group with positive
     and negative samples from the ground truths (gt). It applies noise to the class labels and bounding box coordinates,
     and returns the modified labels, bounding boxes, attention mask and meta information.
+
     Args:
         batch (dict): A dict that includes 'gt_cls' (torch.Tensor with shape [num_gts, ]), 'gt_bboxes'
             (torch.Tensor with shape [num_gts, 4]), 'gt_groups' (List(int)) which is a list of batch size length
@@ -177,6 +166,7 @@ def get_cdn_group(
         cls_noise_ratio (float, optional): Noise ratio for class labels. Defaults to 0.5.
         box_noise_scale (float, optional): Noise scale for bounding box coordinates. Defaults to 1.0.
         training (bool, optional): If it's in training mode. Defaults to False.
+
     Returns:
         (Tuple[Optional[Tensor], Optional[Tensor], Optional[Tensor], Optional[Dict]]): The modified class embeddings,
             bounding boxes, attention mask and meta information for denoising. If not in training mode or 'num_dn'
@@ -198,7 +188,7 @@ def get_cdn_group(
     gt_bbox = batch["bboxes"]  # bs*num, 4
     b_idx = batch["batch_idx"]
 
-    # Each group has positive and negative queries.   bs*num->total_num
+    # Each group has positive and negative queries.
     dn_cls = gt_cls.repeat(2 * num_group)  # (2*num_group*bs*num, )
     dn_bbox = gt_bbox.repeat(2 * num_group, 1)  # 2*num_group*bs*num, 4
     dn_b_idx = b_idx.repeat(2 * num_group).view(-1)  # (2*num_group*bs*num, )
@@ -213,33 +203,33 @@ def get_cdn_group(
         idx = torch.nonzero(mask).squeeze(-1)
         # Randomly put a new one here
         new_label = torch.randint_like(idx, 0, num_classes, dtype=dn_cls.dtype, device=dn_cls.device)
-        dn_cls[idx] = new_label  # 已经在GT中加入了噪声label
+        dn_cls[idx] = new_label
 
     if box_noise_scale > 0:
         known_bbox = xywh2xyxy(dn_bbox)
 
-        diff = (dn_bbox[..., 2:] * 0.5).repeat(1, 2) * box_noise_scale  # 由GT bbox的w和h生成的四维张量 # 2*num_group*bs*num, 4
+        diff = (dn_bbox[..., 2:] * 0.5).repeat(1, 2) * box_noise_scale  # 2*num_group*bs*num, 4
 
-        rand_sign = torch.randint_like(dn_bbox, 0, 2) * 2.0 - 1.0  # 由GT bbox形状随机生成的[-1,1]的标识符
-        rand_part = torch.rand_like(dn_bbox)  # 由GT bbox形状随机生成的随机数
-        rand_part[neg_idx] += 1.0  # 对随机数索引后半部分的值加1
-        rand_part *= rand_sign  # 随机数乘随机数标识符
-        known_bbox += rand_part * diff  # 加入噪声的GT bbox
-        known_bbox.clip_(min=0.0, max=1.0) # 将加入噪声的GT bbox限制在[0,1]
+        rand_sign = torch.randint_like(dn_bbox, 0, 2) * 2.0 - 1.0
+        rand_part = torch.rand_like(dn_bbox)
+        rand_part[neg_idx] += 1.0
+        rand_part *= rand_sign
+        known_bbox += rand_part * diff
+        known_bbox.clip_(min=0.0, max=1.0)
         dn_bbox = xyxy2xywh(known_bbox)
         dn_bbox = torch.logit(dn_bbox, eps=1e-6)  # inverse sigmoid
 
     num_dn = int(max_nums * 2 * num_group)  # total denoising queries
     # class_embed = torch.cat([class_embed, torch.zeros([1, class_embed.shape[-1]], device=class_embed.device)])
     dn_cls_embed = class_embed[dn_cls]  # bs*num * 2 * num_group, 256
-    padding_cls = torch.zeros(bs, num_dn, dn_cls_embed.shape[-1], device=gt_cls.device)  # [2 num_dn 256]
-    padding_bbox = torch.zeros(bs, num_dn, 4, device=gt_bbox.device)  # [2 num_dn 4]
+    padding_cls = torch.zeros(bs, num_dn, dn_cls_embed.shape[-1], device=gt_cls.device)
+    padding_bbox = torch.zeros(bs, num_dn, 4, device=gt_bbox.device)
 
     map_indices = torch.cat([torch.tensor(range(num), dtype=torch.long) for num in gt_groups])
-    pos_idx = torch.stack([map_indices + max_nums * i for i in range(num_group)], dim=0)  # 用于记录存在目标的索引
+    pos_idx = torch.stack([map_indices + max_nums * i for i in range(num_group)], dim=0)
 
     map_indices = torch.cat([map_indices + max_nums * i for i in range(2 * num_group)])
-    padding_cls[(dn_b_idx, map_indices)] = dn_cls_embed  # BATCH中的目标数量不一样，用0补齐，以max_nums为一个周期
+    padding_cls[(dn_b_idx, map_indices)] = dn_cls_embed
     padding_bbox[(dn_b_idx, map_indices)] = dn_bbox
 
     tgt_size = num_dn + num_queries

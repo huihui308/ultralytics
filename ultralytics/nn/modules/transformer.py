@@ -25,7 +25,6 @@ __all__ = (
 )
 
 
-# transformer就是非常标准的多头自注意力
 class TransformerEncoderLayer(nn.Module):
     """Defines a single layer of the transformer encoder."""
 
@@ -59,7 +58,7 @@ class TransformerEncoderLayer(nn.Module):
 
     def forward_post(self, src, src_mask=None, src_key_padding_mask=None, pos=None):
         """Performs forward pass with post-normalization."""
-        q = k = self.with_pos_embed(src, pos) # q k加上位置编码信息
+        q = k = self.with_pos_embed(src, pos)
         src2 = self.ma(q, k, value=src, attn_mask=src_mask, key_padding_mask=src_key_padding_mask)[0]
         src = src + self.dropout1(src2)
         src = self.norm1(src)
@@ -92,12 +91,12 @@ class AIFI(TransformerEncoderLayer):
         super().__init__(c1, cm, num_heads, dropout, act, normalize_before)
 
     def forward(self, x):
-        """Forward pass for the AIFI transformer layer."""   #就是一个位置编码加一个encoder结构
-        c, h, w = x.shape[1:] # 256 20 20
-        pos_embed = self.build_2d_sincos_position_embedding(w, h, c)  # 对特征图每个像素位置编码 [1 400 256]
+        """Forward pass for the AIFI transformer layer."""
+        c, h, w = x.shape[1:]
+        pos_embed = self.build_2d_sincos_position_embedding(w, h, c)
         # Flatten [B, C, H, W] to [B, HxW, C]
-        x = super().forward(x.flatten(2).permute(0, 2, 1), pos=pos_embed.to(device=x.device, dtype=x.dtype)) # [N 400 256]
-        return x.permute(0, 2, 1).view([-1, c, h, w]).contiguous() # [N 256 20 20]
+        x = super().forward(x.flatten(2).permute(0, 2, 1), pos=pos_embed.to(device=x.device, dtype=x.dtype))
+        return x.permute(0, 2, 1).view([-1, c, h, w]).contiguous()
 
     @staticmethod
     def build_2d_sincos_position_embedding(w, h, embed_dim=256, temperature=10000.0):
@@ -257,9 +256,9 @@ class MSDeformAttn(nn.Module):
             .repeat(1, self.n_levels, self.n_points, 1)
         )
         for i in range(self.n_points):
-            grid_init[:, :, i, :] *= i + 1  # 每个level每个point偏置对应的head进行编码
+            grid_init[:, :, i, :] *= i + 1
         with torch.no_grad():
-            self.sampling_offsets.bias = nn.Parameter(grid_init.view(-1))  # 对不同的偏置进行编码, 不同点的编码不同但不同level是相同的
+            self.sampling_offsets.bias = nn.Parameter(grid_init.view(-1))
         constant_(self.attention_weights.weight.data, 0.0)
         constant_(self.attention_weights.bias.data, 0.0)
         xavier_uniform_(self.value_proj.weight.data)
@@ -284,10 +283,6 @@ class MSDeformAttn(nn.Module):
         Returns:
             output (Tensor): [bs, Length_{query}, C]
         """
-        # 该函数就是将加了pos_embeds的srcs作为query传入
-        # 每一个query在特征图上对应一个 reference_point，基于每个reference_point再选取 n(n_points) = 4（源码中设置）
-        # 个keys，根据Linear生成的attention_weights进行特征融合（注意力权重不是Q * k算来的，而是对query直接Linear得到的）。
-        # 这样大大提高了收敛速度，有选择性的注意Sparse区域来训练attention
         bs, len_q = query.shape[:2]
         len_v = value.shape[1]
         assert sum(s[0] * s[1] for s in value_shapes) == len_v
@@ -296,9 +291,9 @@ class MSDeformAttn(nn.Module):
         if value_mask is not None:
             value = value.masked_fill(value_mask[..., None], float(0))
         value = value.view(bs, len_v, self.n_heads, self.d_model // self.n_heads)
-        sampling_offsets = self.sampling_offsets(query).view(bs, len_q, self.n_heads, self.n_levels, self.n_points, 2)  # 每个query产生对应不同head不同level的偏置，sampling_offsets 的shape由[N,Len_q,256] -> [N,Len_q,8,4,4,2]
-        attention_weights = self.attention_weights(query).view(bs, len_q, self.n_heads, self.n_levels * self.n_points)  # 每个偏置向量的权重，经过Linear(256,128),attention_weights的shape由[N,Len_q,256] -> [N,Len_q,8,16]
-        attention_weights = F.softmax(attention_weights, -1).view(bs, len_q, self.n_heads, self.n_levels, self.n_points)  # 对属于同一个query的来自与不同level的向量权重在每个head分别归一化，softmax后attention_weights的shape由[N,Len_q,8,16] -> [N,Len_q,8,4,4]
+        sampling_offsets = self.sampling_offsets(query).view(bs, len_q, self.n_heads, self.n_levels, self.n_points, 2)
+        attention_weights = self.attention_weights(query).view(bs, len_q, self.n_heads, self.n_levels * self.n_points)
+        attention_weights = F.softmax(attention_weights, -1).view(bs, len_q, self.n_heads, self.n_levels, self.n_points)
         # N, Len_q, n_heads, n_levels, n_points, 2
         num_points = refer_bbox.shape[-1]
         if num_points == 2:
@@ -311,7 +306,7 @@ class MSDeformAttn(nn.Module):
         else:
             raise ValueError(f"Last dim of reference_points must be 2 or 4, but got {num_points}.")
         output = multi_scale_deformable_attn_pytorch(value, value_shapes, sampling_locations, attention_weights)
-        return self.output_proj(output) # 输出经过一个Linear层，维度由[N,Len_q,256] -> [N,Len_q,256]
+        return self.output_proj(output)
 
 
 class DeformableTransformerDecoderLayer(nn.Module):

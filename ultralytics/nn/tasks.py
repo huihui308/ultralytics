@@ -54,9 +54,6 @@ from ultralytics.nn.modules import (
     SCDown,
     Segment,
     WorldDetect,
-    CSPStage,
-    StemBlock, Shuffle_Block, DWConvblock, BiLevelRoutingAttention, ADD,
-    Silence,
     v10Detect,
 )
 from ultralytics.utils import DEFAULT_CFG_DICT, DEFAULT_CFG_KEYS, LOGGER, colorstr, emojis, yaml_load
@@ -911,7 +908,6 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
                     args[j] = locals()[a] if a in locals() else ast.literal_eval(a)
 
         n = n_ = max(round(n * depth), 1) if n > 1 else n  # depth gain
-
         if m in {
             Classify,
             Conv,
@@ -923,8 +919,6 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             SPPF,
             DWConv,
             Focus,
-            StemBlock, Shuffle_Block, DWConvblock, 
-            CSPStage, 
             BottleneckCSP,
             C1,
             C2,
@@ -956,12 +950,9 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
                 )  # num heads
 
             args = [c1, c2, *args[1:]]
-            if m in {BottleneckCSP, C1, C2, C2f, C2fAttn, C3, C3TR, C3Ghost, C3x, RepC3, CSPStage, C2fCIB}:
+            if m in {BottleneckCSP, C1, C2, C2f, C2fAttn, C3, C3TR, C3Ghost, C3x, RepC3, C2fCIB}:
                 args.insert(2, n)  # number of repeats
                 n = 1
-        elif m is BiLevelRoutingAttention:
-            c2 = ch[f]
-            args = [c2, *args]
         elif m is AIFI:
             args = [ch[f], *args]
         elif m in {HGStem, HGBlock}:
@@ -976,8 +967,6 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             args = [ch[f]]
         elif m is Concat:
             c2 = sum(ch[x] for x in f)
-        elif m is ADD:
-            c2 = sum([ch[x] for x in f])//2
         elif m in {Detect, WorldDetect, Segment, Pose, OBB, ImagePoolingAttn, v10Detect}:
             args.append([ch[x] for x in f])
             if m is Segment:
