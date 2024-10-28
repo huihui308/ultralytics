@@ -39,4 +39,4 @@ if __name__ == '__main__':
     b, c, h, w = x.shape
     net = GAM_Attention(in_channels=c, out_channels=c)
     y = net(x)
-    print(y)
+    print(y.shape)
