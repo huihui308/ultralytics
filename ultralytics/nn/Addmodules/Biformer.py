@@ -1,4 +1,4 @@
-
+# Ultralytics YOLO 🚀, AGPL-3.0 license
 """
     pip install einops -i https://pypi.tuna.tsinghua.edu.cn/simple
 """

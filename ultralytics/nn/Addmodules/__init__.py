@@ -2,4 +2,5 @@
 
 from .MSDA import *
 from .Biformer import *
-
+from .EMA import *
+from .GAM import *

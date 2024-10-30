@@ -1,5 +1,11 @@
+# Ultralytics YOLO 🚀, AGPL-3.0 license
+"""Model head modules."""
+
 import torch.nn as nn
 import torch
+
+
+__all__ = ['GAM_Attention']
 
 
 class GAM_Attention(nn.Module):
