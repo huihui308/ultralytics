@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
-#
-# $ python3 labelme_split_plate_to_yolo.py --labelme_dir=/home/david/dataset/detect/echo_park --result_dir=./
-# $ python3 labelme_split_plate_to_yolo.py --labelme_dir=/home/david/dataset/detect/CBD --result_dir=./
-#
+"""
+$ pip install labelme -i https://pypi.tuna.tsinghua.edu.cn/simple
+
+$ python3 labelme_split_plate_to_yolo.py --labelme_dir=/home/david/dataset/detect/echo_park --result_dir=./
+$ python3 labelme_split_plate_to_yolo.py --labelme_dir=/home/david/dataset/detect/CBD --result_dir=./
+"""
+
 import cv2
 import json
 import numpy as np
