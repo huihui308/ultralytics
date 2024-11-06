@@ -44,3 +44,10 @@ Copy 'david/detect/plate/train.py' to ultralytics root directory. In ultralytics
 ```
 $ python3 train.py
 ```
+
+# Convert .pt to onnx
+https://github.com/marcoslucianops/DeepStream-Yolo-Pose/blob/master/docs/YOLOv8_Pose.md
+```
+$ python3 export_yoloV8_pose.py --dynamic -w runs/pose/train4/weights/best.pt -s 320 320 --simplify
+```
+
