@@ -14,19 +14,19 @@ from ultralytics import YOLO
 
 
 if __name__ == '__main__':
-    # yolo11s-4heads
+    # yolo11n-4heads.yaml: 24
     CFG = "david/detect/prim_detect/cfg/11/yolo11-4heads.yaml"
-    # CFG = "david/detect/prim_detect/cfg/v10/yolov10n-c3k2.yaml"
-    
+
     model = YOLO(CFG)
 
-    # model.load('yolo11s.pt') # loading pretrain weights
+    # model.load('runs/detect/yolo11t0-58epoches-4heads-class11-cbd-wangjing-yizhuang/weights/best.pt')
 
-    model.train(data='david/detect/prim_detect/datasets/yolov10_class11.yaml',
+    model.train(
+                data='david/detect/prim_detect/datasets/yolo_class4.yaml',
                 cache=False,
                 imgsz=640,
                 epochs=300,
-                batch=16,
+                batch=24,
                 close_mosaic=10,
                 device=[0,1],
                 optimizer='SGD', # using SGD
