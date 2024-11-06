@@ -13,6 +13,7 @@ from ultralytics import YOLO
 
 
 if __name__ == '__main__':
+    # CFG = "david/detect/plate/cfg/yolo11-pose.yaml"
     CFG = "david/detect/plate/cfg/yolov8-lite-t-pose.yaml"
 
     model = YOLO(CFG)

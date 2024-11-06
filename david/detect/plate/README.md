@@ -49,5 +49,7 @@ $ python3 train.py
 https://github.com/marcoslucianops/DeepStream-Yolo-Pose/blob/master/docs/YOLOv8_Pose.md
 ```
 $ python3 export_yoloV8_pose.py --dynamic -w runs/pose/train4/weights/best.pt -s 320 320 --simplify
+
+$ yolo export model=runs/pose/plate_Shuffle_Block_320/weights/best.pt format=onnx imgsz=320 batch=8
 ```
 
