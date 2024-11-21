@@ -84,106 +84,149 @@ def deal_files(files_list, output_dir, obj_cnt_list)->None:
             #print(json_data['forward']['name'])
             x0, y0, x1, y1 = json_data['locate']
             x0, y0, x1, y1 = int(x0), int(y0), int(x1), int(y1)
+            if (y0 >= y1) or (x0 >= x1):
+                continue
             img = cv2.imread(image_file)
             cropped_img = img[y0:y1, x0:x1]  # 裁剪坐标为[y0:y1, x0:x1]
             #cv2.imwrite("./cv_cut_thor.jpg", cropped_img)
             labels_list = []
-            if json_data['forward']['name'] == '有棚':
+            # forward type----
+            if json_data['forward']['name'] == '未知':
                 labels_list.append('class0000')
                 obj_cnt_list[0] += 1
-            if json_data['backward']['name'] == '有棚':
+            elif json_data['forward']['name'] == '有棚':
                 labels_list.append('class0001')
                 obj_cnt_list[1] += 1
-            if json_data['purpose']['name'] == '快递':
+            elif json_data['forward']['name'] == '无棚':
                 labels_list.append('class0002')
                 obj_cnt_list[2] += 1
-            if json_data['color']['name'] == '红色':
+            # backward type----
+            if json_data['backward']['name'] == '未知':
                 labels_list.append('class0003')
                 obj_cnt_list[3] += 1
-            elif json_data['color']['name'] == '橙色':
+            elif json_data['backward']['name'] == '有棚':
                 labels_list.append('class0004')
                 obj_cnt_list[4] += 1
-            elif json_data['color']['name'] == '黄色':
+            elif json_data['backward']['name'] == '无棚':
                 labels_list.append('class0005')
                 obj_cnt_list[5] += 1
-            elif json_data['color']['name'] == '绿色':
+            elif json_data['backward']['name'] == '有箱':
                 labels_list.append('class0006')
                 obj_cnt_list[6] += 1
-            elif json_data['color']['name'] == '蓝色':
+            # color type----
+            if json_data['color']['name'] == '未知':
                 labels_list.append('class0007')
                 obj_cnt_list[7] += 1
-            elif json_data['color']['name'] == '紫色':
+            elif json_data['color']['name'] == '黑色':
                 labels_list.append('class0008')
                 obj_cnt_list[8] += 1
-            elif json_data['color']['name'] == '粉色':
-                labels_list.append('class0009')
+            elif json_data['color']['name'] == '白色':
+                labels_list.append('class009')
                 obj_cnt_list[9] += 1
-            elif json_data['color']['name'] == '黑色':
+            elif json_data['color']['name'] == '灰色':
                 labels_list.append('class0010')
                 obj_cnt_list[10] += 1
-            elif json_data['color']['name'] == '白色':
+            elif json_data['color']['name'] == '红色':
                 labels_list.append('class0011')
                 obj_cnt_list[11] += 1
-            elif json_data['color']['name'] == '灰色':
+            elif json_data['color']['name'] == '橙色':
                 labels_list.append('class0012')
                 obj_cnt_list[12] += 1
-            elif json_data['color']['name'] == '棕色':
+            elif json_data['color']['name'] == '黄色':
                 labels_list.append('class0013')
                 obj_cnt_list[13] += 1
-            if json_data['purpose']['name'] == '快递':
+            elif json_data['color']['name'] == '绿色':
                 labels_list.append('class0014')
                 obj_cnt_list[14] += 1
-            elif json_data['purpose']['name'] == '外卖':
+            elif json_data['color']['name'] == '蓝色':
                 labels_list.append('class0015')
                 obj_cnt_list[15] += 1
-            elif json_data['purpose']['name'] == '货运':
+            elif json_data['color']['name'] == '紫色':
                 labels_list.append('class0016')
                 obj_cnt_list[16] += 1
-            elif json_data['purpose']['name'] == '载人':
+            elif json_data['color']['name'] == '棕色':
                 labels_list.append('class0017')
                 obj_cnt_list[17] += 1
-            if json_data['brand']['name'] == '顺丰':
+            elif json_data['color']['name'] == '粉色':
                 labels_list.append('class0018')
                 obj_cnt_list[18] += 1
-            elif json_data['brand']['name'] == '京东':
+            # purpose----
+            if json_data['purpose']['name'] == '未知':
                 labels_list.append('class0019')
                 obj_cnt_list[19] += 1
-            elif json_data['brand']['name'] == '邮政':
+            elif json_data['purpose']['name'] == '载人':
                 labels_list.append('class0020')
                 obj_cnt_list[20] += 1
-            elif json_data['brand']['name'] == '中通':
+            elif json_data['purpose']['name'] == '货运':
                 labels_list.append('class0021')
                 obj_cnt_list[21] += 1
-            elif json_data['brand']['name'] == '圆通':
+            elif json_data['purpose']['name'] == '快递':
                 labels_list.append('class0022')
                 obj_cnt_list[22] += 1
-            elif json_data['brand']['name'] == '申通':
+            elif json_data['purpose']['name'] == '外卖':
                 labels_list.append('class0023')
                 obj_cnt_list[23] += 1
-            elif json_data['brand']['name'] == '德邦':
+            # band----
+            if json_data['brand']['name'] == '未知':
                 labels_list.append('class0024')
                 obj_cnt_list[24] += 1
-            elif json_data['brand']['name'] == '韵达':
+            elif json_data['brand']['name'] == '顺丰':
                 labels_list.append('class0025')
                 obj_cnt_list[25] += 1
-            elif json_data['brand']['name'] == '天天':
+            elif json_data['brand']['name'] == '申通':
                 labels_list.append('class0026')
                 obj_cnt_list[26] += 1
-            elif json_data['brand']['name'] == '百世':
+            elif json_data['brand']['name'] == '圆通':
                 labels_list.append('class0027')
                 obj_cnt_list[27] += 1
-            elif json_data['brand']['name'] == '丹鸟':
+            elif json_data['brand']['name'] == '中通':
                 labels_list.append('class0028')
                 obj_cnt_list[28] += 1
-            elif json_data['brand']['name'] == '天猫':
+            elif json_data['brand']['name'] == '邮政':
                 labels_list.append('class0029')
                 obj_cnt_list[29] += 1
-            elif json_data['brand']['name'] == '海皇':
+            elif json_data['brand']['name'] == '京东':
                 labels_list.append('class0030')
                 obj_cnt_list[30] += 1
-            elif json_data['brand']['name'] == '未知':
+            elif json_data['brand']['name'] == '德邦':
                 labels_list.append('class0031')
                 obj_cnt_list[31] += 1
+            elif json_data['brand']['name'] == '韵达':
+                labels_list.append('class0032')
+                obj_cnt_list[32] += 1
+            elif json_data['brand']['name'] == '百世':
+                labels_list.append('class0033')
+                obj_cnt_list[33] += 1
+            elif json_data['brand']['name'] == '苏宁':
+                labels_list.append('class0034')
+                obj_cnt_list[34] += 1
+            elif json_data['brand']['name'] == '天猫':
+                labels_list.append('class0035')
+                obj_cnt_list[35] += 1
+            elif json_data['brand']['name'] == '极兔':
+                labels_list.append('class0036')
+                obj_cnt_list[36] += 1
+            elif json_data['brand']['name'] == '海皇':
+                labels_list.append('class0037')
+                obj_cnt_list[37] += 1
+            elif json_data['brand']['name'] == '嘉德':
+                labels_list.append('class0038')
+                obj_cnt_list[38] += 1
+            elif json_data['brand']['name'] == '品骏':
+                labels_list.append('class0039')
+                obj_cnt_list[39] += 1
+            elif json_data['brand']['name'] == '丹鸟':
+                labels_list.append('class0040')
+                obj_cnt_list[40] += 1
+            elif json_data['brand']['name'] == '多点':
+                labels_list.append('class0041')
+                obj_cnt_list[41] += 1
+            elif json_data['brand']['name'] == '博信达':
+                labels_list.append('class0042')
+                obj_cnt_list[42] += 1
+            elif json_data['brand']['name'] == '宅急送':
+                labels_list.append('class0043')
+                obj_cnt_list[43] += 1
         #print(len(labels_list), output_dir)
         save_file = None
         save_file_name = file_name.split('/')[-1] + "_" + str(random.randint(0, 999999999999)).zfill(12) + file_type
@@ -207,7 +250,7 @@ def main_func(args = None):
     args.output_dir = os.path.abspath(args.output_dir)
     prYellow('output_dir: {}'.format(args.output_dir))
     files_list = []
-    obj_cnt_list = [0 for _ in range(32)]
+    obj_cnt_list = [0 for _ in range(44)]
     make_ouput_dir(args.output_dir, len(obj_cnt_list))
     for root, dirs, files in os.walk(args.input_dir):
         for one_file in files:
