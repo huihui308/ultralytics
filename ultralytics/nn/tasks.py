@@ -1,5 +1,6 @@
 # Ultralytics YOLO 🚀, AGPL-3.0 license
 
+from .Addmodules import *
 import contextlib
 import pickle
 import re
@@ -999,6 +1000,7 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
             PSA,
             SCDown,
             C2fCIB,
+            C2PSA_MSDA, StemBlock, Shuffle_Block, DWConvblock, C2PSA_Biformer,
         }:
             c1, c2 = ch[f], args[0]
             if c2 != nc:  # if c2 not equal to number of classes (i.e. for Classify() output)
@@ -1032,6 +1034,15 @@ def parse_model(d, ch, verbose=True):  # model_dict, input_channels(3)
                 legacy = False
                 if scale in "mlx":
                     args[3] = True
+        elif m is EMA_Attention:
+            args = [ch[f]]
+        elif m in {GAM_Attention}:
+            args = [ch[f], *args]
+        elif m in {MultiDilatelocalAttention, BiLevelRoutingAttention}:
+            c2 = ch[f]
+            args = [c2, *args]
+        elif m is ADD:
+            c2 = sum([ch[x] for x in f])//2
         elif m is AIFI:
             args = [ch[f], *args]
         elif m in {HGStem, HGBlock}:
