@@ -15,7 +15,7 @@ if __name__ == '__main__':
                 data='/home/david/dataset/classification/tricycle_train_data',
                 cache=False,
                 imgsz=128,
-                epochs=150,
+                epochs=300,
                 batch=4096,
                 # close_mosaic=10,
                 device=[0,1],
