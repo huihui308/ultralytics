@@ -18,17 +18,18 @@ if __name__ == '__main__':
 
     model = YOLO(CFG)
 
-    model.load('runs/detect/yolo11n-4heads-class12-cbd-wangjing-yizhuang/weights/best.pt')
+    # model.load('runs/detect/yolo11n-4heads-class12-cbd-wangjing-yizhuang/weights/best.pt')
 
     model.train(
                 data='david/detect/prim_detect/datasets/yolo_class12.yaml',
+                seed=100,
                 cache=False,
                 imgsz=640,
                 epochs=300,
                 batch=24,
                 close_mosaic=10,
                 device=[0,1],
-                optimizer='SGD', # using SGD
+                optimizer='AdamW', # SGD, Adam, AdamW, NAdam, RAdam, RMSProp etc., or auto
                 # project='runs/train',
                 # name='exp',
     )
