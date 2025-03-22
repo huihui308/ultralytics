@@ -12,6 +12,7 @@ def show_convert_results(image_path, label_path):
         label_path_name = os.path.join(label_path, file_prefix + '.txt')
         # print(label_path_name, file_path_name)
         if not os.path.exists(label_path_name):
+            print("{} not exists".format(label_path_name))
             continue
         # 读取YOLO格式的标签文件
         image = cv2.imread(file_path_name)
@@ -37,9 +38,9 @@ def show_convert_results(image_path, label_path):
 
 
 if __name__ == "__main__":
-    # image_path = r'/home/david/dataset/drone/UAVDTOrigin/yolo/train/images'
-    # label_path = r'/home/david/dataset/drone/UAVDTOrigin/yolo/train/labels'
-    image_path = r'/home/david/dataset/drone/VisDroneOrigin/VisDrone2019-DET-train/images'
-    label_path = r'/home/david/dataset/drone/VisDroneOrigin/VisDrone2019-DET-train/labels'
+    image_path = r'/home/david/dataset/drone/uavdt-split/val/images'
+    label_path = r'/home/david/dataset/drone/uavdt-split/val/labels'
+    #image_path = r'/home/david/dataset/drone/VisDroneOrigin/VisDrone2019-DET-train/images'
+    #label_path = r'/home/david/dataset/drone/VisDroneOrigin/VisDrone2019-DET-train/labels'
     
     show_convert_results(image_path, label_path)

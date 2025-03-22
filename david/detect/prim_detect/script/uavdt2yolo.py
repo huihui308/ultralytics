@@ -174,7 +174,3 @@ if __name__ == "__main__":
     tra_labels_dir = '/home/david/dataset/drone/UAVDTOrigin/yolo/train/labels'
     val_labels_dir = '/home/david/dataset/drone/UAVDTOrigin/yolo/val/labels'
     split_train_val(images_dir, labels_dir, tra_img_dir, val_img_dir, tra_labels_dir, val_labels_dir)
-
-
-
-
