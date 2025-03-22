@@ -1,4 +1,26 @@
 
+# Train in docker
+https://docs.ultralytics.com/zh/guides/docker-quickstart/#installing-ultralytics-docker-images
+```
+# Set image name as a variable
+t=ultralytics/ultralytics:latest
+
+# Pull the latest Ultralytics image from Docker Hub
+sudo docker pull $t
+
+# Run with all GPUs
+sudo docker run -it --ipc=host --gpus all $t
+
+# Run specifying which GPUs to use
+sudo docker run -it --ipc=host --gpus '"device=2,3"' $t
+
+# Mount a local directory into the container
+sudo docker run -it --ipc=host --gpus all -v /path/on/host:/path/in/container $t
+
+docker run --restart=always -itd --ipc=host --gpus '"device=0,2,3"' -v /home/ubuntu/david:/home/ubuntu/david ultralytics/ultralytics:latest
+```
+
+
 # See results on web
 ```
 $ tensorboard --logdir /mnt/hud7300G/david/code/ultralytics/runs/detect/train --bind_all
