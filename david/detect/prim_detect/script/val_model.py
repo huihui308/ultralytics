@@ -1,10 +1,15 @@
+#!/usr/bin/python3
+"""
+$ nohup python3 david/detect/prim_detect/script/val_model.py > log.txt 2>&1 &
+
+"""
 from ultralytics import YOLO
 import os
 from pathlib import Path
 
 # Step 1: Load the YOLOv11 model
 #model = YOLO("runs/detect/yolo12x-4heads-900epoches-visdrone-20250310/weights/best.pt")  # Replace with your trained model path if needed
-model = YOLO("/home/david/code/ultralytics/best.pt")  # Replace with your trained model path if needed
+model = YOLO("/home/david/code/ultralytics/runs/detect/train/weights/best.pt")  # Replace with your trained model path if needed
 # model = YOLO("/home/david/code/ultralytics/runs/detect/train/weights/best.pt")  # Replace with your trained model path if needed
 
 # Step 2: Define paths to the validation directory

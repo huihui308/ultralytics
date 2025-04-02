@@ -9,6 +9,27 @@ import math
 # 代码改进者：一勺汤
 
 
+class Conv(nn.Module):
+    """Standard convolution with args(ch_in, ch_out, kernel, stride, padding, groups, dilation, activation)."""
+
+    default_act = nn.SiLU()  # default activation
+
+    def __init__(self, c1, c2, k=1, s=1, p=None, g=1, d=1, act=True):
+        """Initialize Conv layer with given arguments including activation."""
+        super().__init__()
+        self.conv = nn.Conv2d(c1, c2, k, s, autopad(k, p, d), groups=g, dilation=d, bias=False)
+        self.bn = nn.BatchNorm2d(c2)
+        self.act = self.default_act if act is True else act if isinstance(act, nn.Module) else nn.Identity()
+
+    def forward(self, x):
+        """Apply convolution, batch normalization and activation to input tensor."""
+        return self.act(self.bn(self.conv(x)))
+
+    def forward_fuse(self, x):
+        """Perform transposed convolution of 2D data."""
+        return self.act(self.conv(x))
+
+
 class StdPool(nn.Module):
     def __init__(self):
         """
@@ -137,6 +158,27 @@ class MCALayer(nn.Module):
             # 通道方向的 MCA 门控
             self.c_hw = MCAGate(kernel)
 
+        self.operate_type = 0
+        # 1x1 卷积层用于降维
+        if self.operate_type == 1:
+            if not no_spatial:
+                # Concatenating 3 attention maps -> 3 * inp channels
+                # self.conv_reduce = nn.Conv2d(3 * inp, inp, kernel_size=1, bias=False)
+                self.conv_reduce = Conv(3*inp, inp, 1, 1)
+            else:
+                # Concatenating 2 attention maps -> 2 * inp channels
+                # self.conv_reduce = nn.Conv2d(2 * inp, inp, kernel_size=1, bias=False)
+                self.conv_reduce = Conv(2*inp, inp, 1, 1)
+        elif self.operate_type == 2:
+            if not no_spatial:
+                # Concatenating 4 attention maps -> 4 * inp channels
+                # self.conv_reduce = nn.Conv2d(4 * inp, inp, kernel_size=1, bias=False)
+                self.conv_reduce = Conv(4*inp, inp, 1, 1)
+            else:
+                # Concatenating 3 attention maps -> 3 * inp channels
+                # self.conv_reduce = nn.Conv2d(3 * inp, inp, kernel_size=1, bias=False)
+                self.conv_reduce = Conv(3*inp, inp, 1, 1)
+
     def forward(self, x):
         """
         前向传播过程，对输入特征图在不同方向上进行 MCA 门控处理并融合。
@@ -157,14 +199,37 @@ class MCALayer(nn.Module):
         x_w = self.w_hc(x_w)
         x_w = x_w.permute(0, 3, 2, 1).contiguous()
 
-        if not self.no_spatial:
-            # 进行通道方向的处理
-            x_c = self.c_hw(x)
-            # 融合三个方向的结果
-            x_out = 1 / 3 * (x_c + x_h + x_w)
+        if self.operate_type == 1:
+            if not self.no_spatial:
+                # 进行通道方向的处理
+                x_c = self.c_hw(x)
+                # 拼接三个方向的结果
+                x_out = torch.cat([x_h, x_w, x_c], dim=1)
+            else:
+                # 拼接水平和垂直方向的结果
+                x_out = torch.cat([x_h, x_w], dim=1)
+            # 使用 1x1 卷积降维
+            x_out = self.conv_reduce(x_out)
+        elif self.operate_type == 2:
+            if not self.no_spatial:
+                # 进行通道方向的处理
+                x_c = self.c_hw(x)
+                # 拼接三个方向的结果
+                x_out = torch.cat([x, x_h, x_w, x_c], dim=1)
+            else:
+                # 拼接水平和垂直方向的结果
+                x_out = torch.cat([x, x_h, x_w], dim=1)
+            # 使用 1x1 卷积降维
+            x_out = self.conv_reduce(x_out)
         else:
-            # 仅融合水平和垂直方向的结果
-            x_out = 1 / 2 * (x_h + x_w)
+            if not self.no_spatial:
+                # 进行通道方向的处理
+                x_c = self.c_hw(x)
+                # 融合三个方向的结果
+                x_out = 1 / 3 * (x_c + x_h + x_w)
+            else:
+                # 仅融合水平和垂直方向的结果
+                x_out = 1 / 2 * (x_h + x_w)
 
         return x_out
 
@@ -176,26 +241,6 @@ def autopad(k, p=None, d=1):  # kernel, padding, dilation
         p = k // 2 if isinstance(k, int) else [x // 2 for x in k]  # auto-pad
     return p
 
-
-class Conv(nn.Module):
-    """Standard convolution with args(ch_in, ch_out, kernel, stride, padding, groups, dilation, activation)."""
-
-    default_act = nn.SiLU()  # default activation
-
-    def __init__(self, c1, c2, k=1, s=1, p=None, g=1, d=1, act=True):
-        """Initialize Conv layer with given arguments including activation."""
-        super().__init__()
-        self.conv = nn.Conv2d(c1, c2, k, s, autopad(k, p, d), groups=g, dilation=d, bias=False)
-        self.bn = nn.BatchNorm2d(c2)
-        self.act = self.default_act if act is True else act if isinstance(act, nn.Module) else nn.Identity()
-
-    def forward(self, x):
-        """Apply convolution, batch normalization and activation to input tensor."""
-        return self.act(self.bn(self.conv(x)))
-
-    def forward_fuse(self, x):
-        """Perform transposed convolution of 2D data."""
-        return self.act(self.conv(x))
 
 class Bottleneck(nn.Module):
     """Standard bottleneck."""
