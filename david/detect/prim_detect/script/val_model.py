@@ -10,7 +10,7 @@ from pathlib import Path
 # Step 1: Load the YOLOv11 model
 #model = YOLO("runs/detect/yolo12x-4heads-900epoches-visdrone-20250310/weights/best.pt")  # Replace with your trained model path if needed
 model = YOLO("/home/david/code/ultralytics/runs/detect/train/weights/best.pt")  # Replace with your trained model path if needed
-# model = YOLO("/home/david/code/ultralytics/runs/detect/train/weights/best.pt")  # Replace with your trained model path if needed
+# model = YOLO("/home/david/code/ultralytics/best.pt")  # Replace with your trained model path if needed
 
 # Step 2: Define paths to the validation directory
 validation_dir = Path("/home/david/dataset/drone/VisDroneOrigin/VisDrone2019-DET-val")  # Update this path
@@ -34,5 +34,16 @@ results = model.val(
 metrics = results.results_dict
 map50 = metrics['metrics/mAP50(B)']  # mAP50 for bounding box detection
 print(metrics)
+
+print("\nResults:")
 print("-------------------------")
-print(f"mAP50: {map50:.4f}")
+
+print(f"mAP: {results.box.map}")
+print(f"mAP50: {results.box.map50}")
+# print(f"mAP50: {map50:.4f}")
+print(f"mAP75: {results.box.map75}")
+
+# print(results.speed['inference'], float(results.speed['inference']))
+fps = int(1000/float(results.speed['inference']))
+print(f"FPS: {fps}")
+print("-------------------------")

@@ -334,32 +334,6 @@ class C3k2_MCAM(C2f):
         )
 
 
-from einops import rearrange
-class EMSConv(nn.Module):
-    def __init__(self, channel=256, kernels=[3, 5]):
-        super().__init__()
-        self.groups = len(kernels)
-        min_ch = channel // 4
-        assert min_ch >= 16, f'channel must Greater than {64}, but {channel}'
-
-        self.convs = nn.ModuleList([])
-        for ks in kernels:
-            self.convs.append(Conv(c1=min_ch, c2=min_ch, k=ks))
-        self.conv_1x1 = Conv(channel, channel, k=1)
-
-    def forward(self, x):
-        _, c, _, _ = x.size()
-        x_cheap, x_group = torch.split(x, [c // 2, c // 2], dim=1)
-        x_group = rearrange(x_group, 'bs (g ch) h w -> bs ch h w g', g=self.groups)
-        x_group = torch.stack([self.convs[i](x_group[..., i]) for i in range(len(self.convs))])
-        x_group = rearrange(x_group, 'g bs ch h w -> bs (g ch) h w')
-        x = torch.cat([x_cheap, x_group], dim=1)
-        x = self.conv_1x1(x)
-        #print("---------------------")
-
-        return x
-
-
 class AAttn(nn.Module):
     """
     Area-attention module for YOLO models, providing efficient attention mechanisms.
@@ -404,8 +378,7 @@ class AAttn(nn.Module):
 
         self.qkv = Conv(dim, all_head_dim * 3, 1, act=False)
         self.proj = Conv(all_head_dim, dim, 1, act=False)
-        # self.pe = Conv(all_head_dim, dim, 7, 1, 3, g=dim, act=False)
-        self.pe = EMSConv(channel=all_head_dim)
+        self.pe = Conv(all_head_dim, dim, 7, 1, 3, g=dim, act=False)
 
     def forward(self, x):
         """Processes the input tensor 'x' through the area-attention."""
@@ -561,6 +534,7 @@ class A2C2f_MCAM(nn.Module):
         if self.gamma is not None:
             return x + self.gamma.view(-1, len(self.gamma), 1, 1) * y
         return y
+
 
 
 if __name__ == "__main__":
