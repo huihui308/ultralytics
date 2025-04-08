@@ -9,27 +9,6 @@ import math
 # 代码改进者：一勺汤
 
 
-class Conv(nn.Module):
-    """Standard convolution with args(ch_in, ch_out, kernel, stride, padding, groups, dilation, activation)."""
-
-    default_act = nn.SiLU()  # default activation
-
-    def __init__(self, c1, c2, k=1, s=1, p=None, g=1, d=1, act=True):
-        """Initialize Conv layer with given arguments including activation."""
-        super().__init__()
-        self.conv = nn.Conv2d(c1, c2, k, s, autopad(k, p, d), groups=g, dilation=d, bias=False)
-        self.bn = nn.BatchNorm2d(c2)
-        self.act = self.default_act if act is True else act if isinstance(act, nn.Module) else nn.Identity()
-
-    def forward(self, x):
-        """Apply convolution, batch normalization and activation to input tensor."""
-        return self.act(self.bn(self.conv(x)))
-
-    def forward_fuse(self, x):
-        """Perform transposed convolution of 2D data."""
-        return self.act(self.conv(x))
-
-
 class StdPool(nn.Module):
     def __init__(self):
         """
@@ -158,25 +137,25 @@ class MCALayer(nn.Module):
             # 通道方向的 MCA 门控
             self.c_hw = MCAGate(kernel)
 
-        self.operate_type = 0
+        self.operate_type = 2
         # 1x1 卷积层用于降维
         if self.operate_type == 1:
             if not no_spatial:
                 # Concatenating 3 attention maps -> 3 * inp channels
-                # self.conv_reduce = nn.Conv2d(3 * inp, inp, kernel_size=1, bias=False)
+                #self.conv_reduce = nn.Conv2d(3 * inp, inp, kernel_size=1, bias=True)
                 self.conv_reduce = Conv(3*inp, inp, 1, 1)
             else:
                 # Concatenating 2 attention maps -> 2 * inp channels
-                # self.conv_reduce = nn.Conv2d(2 * inp, inp, kernel_size=1, bias=False)
+                #self.conv_reduce = nn.Conv2d(2 * inp, inp, kernel_size=1, bias=True)
                 self.conv_reduce = Conv(2*inp, inp, 1, 1)
         elif self.operate_type == 2:
             if not no_spatial:
                 # Concatenating 4 attention maps -> 4 * inp channels
-                # self.conv_reduce = nn.Conv2d(4 * inp, inp, kernel_size=1, bias=False)
+                #self.conv_reduce = nn.Conv2d(4 * inp, inp, kernel_size=1, bias=True)
                 self.conv_reduce = Conv(4*inp, inp, 1, 1)
             else:
                 # Concatenating 3 attention maps -> 3 * inp channels
-                # self.conv_reduce = nn.Conv2d(3 * inp, inp, kernel_size=1, bias=False)
+                #self.conv_reduce = nn.Conv2d(3 * inp, inp, kernel_size=1, bias=True)
                 self.conv_reduce = Conv(3*inp, inp, 1, 1)
 
     def forward(self, x):
@@ -241,6 +220,26 @@ def autopad(k, p=None, d=1):  # kernel, padding, dilation
         p = k // 2 if isinstance(k, int) else [x // 2 for x in k]  # auto-pad
     return p
 
+
+class Conv(nn.Module):
+    """Standard convolution with args(ch_in, ch_out, kernel, stride, padding, groups, dilation, activation)."""
+
+    default_act = nn.SiLU()  # default activation
+
+    def __init__(self, c1, c2, k=1, s=1, p=None, g=1, d=1, act=True):
+        """Initialize Conv layer with given arguments including activation."""
+        super().__init__()
+        self.conv = nn.Conv2d(c1, c2, k, s, autopad(k, p, d), groups=g, dilation=d, bias=False)
+        self.bn = nn.BatchNorm2d(c2)
+        self.act = self.default_act if act is True else act if isinstance(act, nn.Module) else nn.Identity()
+
+    def forward(self, x):
+        """Apply convolution, batch normalization and activation to input tensor."""
+        return self.act(self.bn(self.conv(x)))
+
+    def forward_fuse(self, x):
+        """Perform transposed convolution of 2D data."""
+        return self.act(self.conv(x))
 
 class Bottleneck(nn.Module):
     """Standard bottleneck."""
@@ -356,7 +355,6 @@ class EMSConv(nn.Module):
         x = torch.cat([x_cheap, x_group], dim=1)
         x = self.conv_1x1(x)
         #print("---------------------")
-
         return x
 
 
@@ -404,8 +402,20 @@ class AAttn(nn.Module):
 
         self.qkv = Conv(dim, all_head_dim * 3, 1, act=False)
         self.proj = Conv(all_head_dim, dim, 1, act=False)
-        # self.pe = Conv(all_head_dim, dim, 7, 1, 3, g=dim, act=False)
-        self.pe = EMSConv(channel=all_head_dim)
+        self.pe = Conv(all_head_dim, dim, 7, 1, 3, g=dim, act=False)
+        # self.pe = EMSConv(channel=all_head_dim)
+
+        # oringin, 1: sequential, 2: parallel
+        self.pe_type = 2
+        if self.pe_type == 1:
+            # Replace 7x7 with sequential 3x3 and 5x5 convolutions
+            self.pe_3x3 = Conv(all_head_dim, dim, 3, 1, 1, g=dim, act=False)
+            self.pe_5x5 = Conv(dim, dim, 5, 1, 2, g=dim, act=False)
+        elif self.pe_type == 2:
+            # Replace 7x7 with parallel 3x3 and 5x5 convolutions
+            self.pe_3x3 = Conv(all_head_dim, dim, 3, 1, 1, g=dim, act=False)
+            self.pe_5x5 = Conv(all_head_dim, dim, 5, 1, 2, g=dim, act=False)
+            self.pe_1x1 = Conv(2 * dim, dim, 1, 1, 0, g=dim, act=True)  # Reduce concatenated features
 
     def forward(self, x):
         """Processes the input tensor 'x' through the area-attention."""
@@ -435,7 +445,28 @@ class AAttn(nn.Module):
         x = x.reshape(B, H, W, C).permute(0, 3, 1, 2).contiguous()
         v = v.reshape(B, H, W, C).permute(0, 3, 1, 2).contiguous()
 
-        x = x + self.pe(v)
+        if self.pe_type == 1:
+            # Apply 3x3 followed by 5x5
+            pe = self.pe_5x5(self.pe_3x3(v))
+            x = x + pe
+        elif self.pe_type == 2:
+            """
+            # Combine outputs of 3x3 and 5x5 convolutions
+            #pe = self.pe_3x3(v) + self.pe_5x5(v)
+            #x = x + pe
+            """
+            # Apply 3x3 and 5x5 convolutions in parallel
+            pe_3x3 = self.pe_3x3(v)
+            pe_5x5 = self.pe_5x5(v)
+            # Concatenate their outputs along the channel dimension
+            pe_concat = torch.cat([pe_3x3, pe_5x5], dim=1)
+            # Apply 1x1 convolution to reduce dimensionality
+            pe = self.pe_1x1(pe_concat)
+            # Add position encoding to the attention output
+            x = x + pe
+        else:
+            x = x + self.pe(v)
+
         return self.proj(x)
 
 
@@ -561,6 +592,7 @@ class A2C2f_MCAM(nn.Module):
         if self.gamma is not None:
             return x + self.gamma.view(-1, len(self.gamma), 1, 1) * y
         return y
+
 
 
 if __name__ == "__main__":
