@@ -58,8 +58,8 @@ def show_convert_results(image_path, label_path):
 
 
 if __name__ == "__main__":
-    image_path = r'/home/david/docker/share/dataset/waste_classification/YOLO-Waste-Detection-1/YOLO-Waste-Detection-1/train/images'
-    label_path = r'/home/david/docker/share/dataset/waste_classification/YOLO-Waste-Detection-1/YOLO-Waste-Detection-1/train/labels'
+    image_path = r'/home/david/docker/share/dataset/uavvaste/yolo/train/images'
+    label_path = r'/home/david/docker/share/dataset/uavvaste/yolo/train/labels'
     #image_path = r'/home/david/dataset/drone/VisDroneOrigin/VisDrone2019-DET-train/images'
     #label_path = r'/home/david/dataset/drone/VisDroneOrigin/VisDrone2019-DET-train/labels'
     
