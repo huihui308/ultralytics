@@ -2,12 +2,22 @@
 # -*- coding: utf-8 -*-
 import cv2
 import os
+from pathlib import Path
+
+
+def get_file_name(file_path):
+    # Convert the string path to a Path object
+    path = Path(file_path)
+    # Get the file name without the last extension
+    file_name_without_extension = path.stem
+    return file_name_without_extension
 
 
 def show_convert_results(image_path, label_path):
     for file_name in os.listdir(image_path):
         # print(file_name)
-        file_prefix = file_name.split('.')[0]
+        # print( get_file_name(file_name) )
+        file_prefix = get_file_name(file_name)
         file_path_name = os.path.join(image_path, file_name)
         label_path_name = os.path.join(label_path, file_prefix + '.txt')
         # print(label_path_name, file_path_name)
@@ -33,13 +43,23 @@ def show_convert_results(image_path, label_path):
                 cv2.putText(image, object_category, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
         # cv2.imwrite('./test.jpg', image)
         cv2.imshow('UAVDT', image)
-        cv2.waitKey(0)
+        print('{}:\th: {}\tw:{}'.format(file_path_name, img_h, img_w))
+
+        # Wait for a key press (0 means wait indefinitely until a key is pressed)
+        key = cv2.waitKey(0) & 0xFF
+        # Check which key was pressed
+        if key == ord('q'):  # Quit if 'q' is pressed
+            print("Quitting the application.")
+            break
+        # cv2.waitKey(0)
+    # Close all OpenCV windows
+    cv2.destroyAllWindows()
     return
 
 
 if __name__ == "__main__":
-    image_path = r'/home/david/dataset/drone/uavdt-split/val/images'
-    label_path = r'/home/david/dataset/drone/uavdt-split/val/labels'
+    image_path = r'/home/david/docker/share/dataset/waste_classification/YOLO-Waste-Detection-1/YOLO-Waste-Detection-1/train/images'
+    label_path = r'/home/david/docker/share/dataset/waste_classification/YOLO-Waste-Detection-1/YOLO-Waste-Detection-1/train/labels'
     #image_path = r'/home/david/dataset/drone/VisDroneOrigin/VisDrone2019-DET-train/images'
     #label_path = r'/home/david/dataset/drone/VisDroneOrigin/VisDrone2019-DET-train/labels'
     
