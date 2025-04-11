@@ -14,6 +14,15 @@ def get_file_name(file_path):
 
 
 def show_convert_results(image_path, label_path):
+    # Define a list of predefined colors (BGR format)
+    colors = [
+        (255, 0, 0),   # Blue
+        (0, 255, 0),   # Green
+        (0, 0, 255),   # Red
+        (255, 255, 0), # Cyan
+        (0, 255, 255), # Yellow
+    ]
+
     for file_name in os.listdir(image_path):
         # print(file_name)
         # print( get_file_name(file_name) )
@@ -28,6 +37,7 @@ def show_convert_results(image_path, label_path):
         image = cv2.imread(file_path_name)
         img_h, img_w, _ = image.shape
         with open(label_path_name, 'r') as f:
+            i = 0
             for line in f:
                 data = line.strip().split(' ')
                 object_category, x_center, y_center, width, height = data
@@ -39,8 +49,11 @@ def show_convert_results(image_path, label_path):
                 height *= img_h
                 x1, y1, x2, y2 = int(x_center - width/2), int(y_center - height/2), int(x_center + width/2), int(y_center + height/2)
                 # 绘制边界框
-                cv2.rectangle(image, (x1, y1), (x2, y2), (255, 0, 0), 2)
-                cv2.putText(image, object_category, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (255, 0, 0), 2)
+                # Use a predefined color or generate a random color
+                color = colors[i % len(colors)]  # Cycle through predefined colors
+                i = i + 1
+                cv2.rectangle(image, (x1, y1), (x2, y2), color, 2)
+                cv2.putText(image, object_category, (x1, y1 - 5), cv2.FONT_HERSHEY_SIMPLEX, 0.5, color, 2)
         # cv2.imwrite('./test.jpg', image)
         cv2.imshow('UAVDT', image)
         print('{}:\th: {}\tw:{}'.format(file_path_name, img_h, img_w))
@@ -58,8 +71,8 @@ def show_convert_results(image_path, label_path):
 
 
 if __name__ == "__main__":
-    image_path = r'/home/david/docker/share/dataset/uavvaste/yolo/train/images'
-    label_path = r'/home/david/docker/share/dataset/uavvaste/yolo/train/labels'
+    image_path = r'/home/david/docker/share/dataset/beer/yolo/train/images'
+    label_path = r'/home/david/docker/share/dataset/beer/yolo/train/labels'
     #image_path = r'/home/david/dataset/drone/VisDroneOrigin/VisDrone2019-DET-train/images'
     #label_path = r'/home/david/dataset/drone/VisDroneOrigin/VisDrone2019-DET-train/labels'
     
